@@ -2,7 +2,9 @@ from django.shortcuts import render , redirect
 from django.contrib import messages 
 from .models import Profile, Meep
 from .forms import MeepForm
-
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 def home(request):
     if request.user.is_authenticated:
         form = MeepForm(request.POST or None)
@@ -45,3 +47,34 @@ def profile(request, pk):
         messages.success(request , ("You Must Be Logged In To View This Page ..."))
         return redirect('home')
 
+
+def login_user(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            messages.success(request, 'You have successfully logged in')
+            return redirect('home')
+        else:
+            return render(request, 'login.html', {'error': 'Invalid credentials'})
+    return render(request, 'login.html')
+
+
+def register_user(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Account created successfully. Please log in.')
+            return redirect('login')
+    else:
+        form = UserCreationForm()
+    return render(request, 'register.html', {'form': form})
+
+
+def logout_user(request):
+    logout(request)
+    messages.success(request, 'You have been logged out')
+    return redirect('login')
