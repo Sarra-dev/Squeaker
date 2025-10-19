@@ -1,6 +1,30 @@
-{%extends 'base.html'%}
+{% extends "base.html" %}
+{% load static %}
 
 {% block content %}
 
-<h1> Hello world </h1>
-{% endblock %}
+<h1 class="mb-3">Meeps!</h1>
+
+<div class="row text-center">
+    <div class="col-8">
+        <!-- MEEPS -->
+        {% if meeps %}
+        {% for meep in meeps %}
+        {% include "partials/meep.html" %}
+        {% endfor %}
+        {% else %}
+        <h1>There are no meeps</h1>
+        {% endif %}
+    </div>
+
+    <!-- MEEP FORM -->
+    <div class="col-4">
+    {% if user.is_authenticated %}
+    {% include "partials/meep_form.html" %}
+    {% else %}       
+    {% include "partials/login_to_meep_css-js_in_html.html" %}
+    {% endif %}
+    </div>
+</div>
+
+{% endblock content %}
