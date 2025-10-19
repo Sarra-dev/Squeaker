@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1 class="mb-3">Profile List</h1>
+
+<!-- PROFILES -->
+{% if profiles %}
+{% for profile in profiles %}
+{% include "partials/profile_card.html" %}
+{% endfor %}
+{% else%}
+<h3>There are no profiles</h3>
+{% endif %}
+{% endblock content %}
