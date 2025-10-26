@@ -6,10 +6,10 @@ class Meep(models.Model):
     user = models.ForeignKey(
         User, related_name="meeps",
         on_delete=models.DO_NOTHING
-        )
+    )
     body = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     def __str__(self):
         return(
             f"{self.user} "
@@ -17,30 +17,50 @@ class Meep(models.Model):
             f"{self.body}..."
         )
 
-#create A User Profile Model
 class Profile(models.Model):
-    user = models.OneToOneField(User , on_delete = models.CASCADE) # associate one user to only one profile
-    follows = models.ManyToManyField("self",
-            related_name="followed_by",
-            symmetrical=False, # user don't have to follow who followed him
-            blank=True) #you don't have to follow anybody
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    follows = models.ManyToManyField(
+        "self",
+        related_name="followed_by",
+        symmetrical=False,
+        blank=True
+    )
     
-    date_modified = models.DateTimeField(User , auto_now = True )
-
+    # New fields for profile customization
+    profile_image = models.ImageField(
+        upload_to='profile_images/',
+        blank=True,
+        null=True
+    )
+    cover_image = models.ImageField(
+        upload_to='cover_images/',
+        blank=True,
+        null=True
+    )
+    bio = models.TextField(max_length=200, blank=True)
+    location = models.CharField(max_length=100, blank=True)
+    website = models.URLField(max_length=200, blank=True)
+    date_modified = models.DateTimeField(auto_now=True)
+    date_created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    
     def __str__(self):
         return self.user.username
+    
+    @property
+    def followers_count(self):
+        return self.followed_by.count()
+    
+    @property
+    def following_count(self):
+        return self.follows.count()
 
-# Create profile When New User Signs Up 
-#@receiver(post_save, sender=User)
-
-def create_profile(sender , instance , created , **kwargs):
-    if created :
-        user_profile = Profile(user = instance)
+# Create profile when new user signs up
+def create_profile(sender, instance, created, **kwargs):
+    if created:
+        user_profile = Profile(user=instance)
         user_profile.save()
-        #have the user follow themselves
+        # Have the user follow themselves
         user_profile.follows.set([instance.profile.id])
         user_profile.save()
 
-post_save.connect(create_profile,sender=User)
-
-
+post_save.connect(create_profile, sender=User)

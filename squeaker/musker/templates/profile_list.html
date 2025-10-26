@@ -1,34 +1,86 @@
-{%extends 'base.html'%}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communities / X</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Include Sidebar Navigation -->
+        {% include 'navbar.html' %}
 
-{% block content %}
-
-<h1> Profile list </h1>
-<br/>
-
-{% if profiles %}
-
-    {% for profile in profiles %}
-
-            <div class="card mb-3" style="max-width: 540px;">
-        <div class="row g-0">
-            <div class="col-md-4">
-            <img src="{% static 'images/profile-icon.jpg'  %}" class="img-fluid rounded-start" alt="Profile Image">
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Content Header -->
+            <div class="content-header">
+                <div class="header-content">
+                    <button class="back-button" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="header-title">
+                        <div class="header-name">Suggested for you</div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-8">
-            <div class="card-body">
-                <h5 class="card-title">{{ profile.user.username }}</h5>
-                <p class="card-text"><a href="{% url 'profile' profile.user.id %}">@{{ profile.user.username|lower}}</a></p>
-                <br/><br/>
-                <p class="card-text"><small class="text-body-secondary">Last_Updated : {{ profile.date_modified }}</small></p>
-            </div>
-            </div>
+
+            <!-- Profile List -->
+            {% if profiles %}
+                {% for profile in profiles %}
+                    <div class="suggestion-card">
+                        <a href="{% url 'profile' profile.user.id %}" class="profile-link">
+                            {% if profile.profile_image %}
+
+                                <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" class="img-fluid rounded-start">
+                            {% else %}
+                                <img src="{/media/profile_images/default_profile.png }" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
+                            {% endif %}
+                        </a>
+                        <div class="suggestion-card-info">
+                            <a href="{% url 'profile' profile.user.id %}" style="text-decoration: none;">
+                                <div class="suggestion-card-name">
+                                    {{ profile.user.get_full_name|default:profile.user.username }}
+                                    {% if profile.user.is_staff %}
+                                        <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="suggestion-card-username">@{{ profile.user.username|lower }}</div>
+                            </a>
+                            {% if profile.bio %}
+                                <div class="suggestion-card-bio">{{ profile.bio|truncatewords:15 }}</div>
+                            {% endif %}
+                            <div class="suggestion-card-meta">
+                                <span><i class="fas fa-calendar-alt"></i> Joined {{ profile.date_created|date:"F Y" }}</span>
+                            </div>
+                        </div>
+                        <form method="POST" action="{% url 'profile' profile.user.id %}" style="margin-left: auto;">
+                            {% csrf_token %}
+                            {% if request.user.profile in profile.followed_by.all %}
+                                <button type="submit" name="follow" value="unfollow" class="btn-following-small">
+                                    Following
+                                </button>
+                            {% else %}
+                                <button type="submit" name="follow" value="follow" class="follow-btn-small">
+                                    Follow
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No suggestions</h3>
+                    <p>Check back later for new people to follow.</p>
+                </div>
+            {% endif %}
         </div>
-        </div>
-        <br/><br/>
 
-    {% endfor %}
-
-{% endif %}
-
-{% endblock %}
+        <!-- Include Right Sidebar -->
+        {% include 'trending.html' %}
+    </div>
+</body>
+</html>

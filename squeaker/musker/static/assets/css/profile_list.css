@@ -1,0 +1,297 @@
+.suggestion-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.suggestion-card:hover {
+    background-color: var(--bg-secondary);
+}
+
+.profile-link {
+    flex-shrink: 0;
+}
+
+.suggestion-card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.img-fluid {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.rounded-start {
+    border-radius: 50%;
+}
+
+.suggestion-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.suggestion-card-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
+    line-height: 20px;
+}
+
+.suggestion-card-name:hover {
+    text-decoration: underline;
+}
+
+.suggestion-card-username {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    line-height: 20px;
+}
+
+.suggestion-card-bio {
+    font-size: 15px;
+    color: var(--text-primary);
+    line-height: 20px;
+    margin-bottom: 8px;
+}
+
+.suggestion-card-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.suggestion-card-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.suggestion-card-meta i {
+    font-size: 14px;
+}
+
+/* Follow Buttons for Suggestion Cards */
+.follow-btn-small,
+.btn-following-small {
+    padding: 0 16px;
+    height: 32px;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    flex-shrink: 0;
+}
+
+.follow-btn-small {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+}
+
+.follow-btn-small:hover {
+    background: #272c30;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-following-small {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-following-small:hover {
+    background-color: rgba(244, 33, 46, 0.1);
+    border-color: rgba(244, 33, 46, 0.4);
+    color: var(--danger);
+}
+
+.btn-following-small:hover::after {
+    content: 'Unfollow';
+}
+
+.btn-following-small::after {
+    content: 'Following';
+}
+
+/* ==================== Empty State ==================== */
+.empty-state {
+    padding: 32px;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 64px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    display: block;
+}
+
+.empty-state h3 {
+    font-size: 31px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 20px;
+}
+
+/* ==================== Right Sidebar (Trending) ==================== */
+.trending-sidebar {
+    width: 350px;
+    padding: 0 16px;
+    background-color: var(--bg-primary);
+}
+
+.search-box {
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    padding: 8px 0;
+    z-index: 10;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px 12px 48px;
+    border-radius: 30px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: var(--bg-primary);
+}
+
+.widget {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    margin: 16px 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.widget:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.widget-header {
+    padding: 12px 16px;
+    font-size: 20px;
+    font-weight: 800;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.widget-item {
+    padding: 12px 16px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.widget-item:hover {
+    background: var(--hover-bg);
+}
+
+/* AI Enhancement Badge */
+.ai-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.ai-badge i {
+    margin-right: 4px;
+    font-size: 10px;
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 1280px) {
+    .trending-sidebar {
+        display: none;
+    }
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 88px;
+    }
+
+    .nav-link span,
+    .user-details,
+    .post-button {
+        display: none;
+    }
+
+    .nav-link {
+        justify-content: center;
+    }
+
+    .nav-link i {
+        margin-right: 0;
+    }
+}
+
+@media (max-width: 688px) {
+    .sidebar {
+        width: 68px;
+        padding: 0 4px;
+    }
+
+    .main-content {
+        max-width: 100%;
+    }
+
+    .logo {
+        padding: 4px;
+    }
+
+    .logo a {
+        width: 40px;
+        height: 40px;
+    }
+
+    .logo svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .nav-link span {
+        display: none;
+    }
+}
