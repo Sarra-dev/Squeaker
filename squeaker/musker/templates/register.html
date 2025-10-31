@@ -8,9 +8,8 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link href="{% static 'assets/css/styles.css' %}" rel="stylesheet">
-
   <style>
-    /* Floating logo animation */
+    /* Reuse the same login page styles */
     .landing-left img {
       max-width: 400px;
       width: 60%;
@@ -18,14 +17,6 @@
       animation: float 3s ease-in-out infinite;
       filter: drop-shadow(0 10px 30px rgba(255, 255, 255, 0.2));
     }
-    .helptext, .helptext ul, #id_password1_helptext, #id_password2_helptext, ul li {
-  display: none !important;
-}
-
-    
- 
-
-
 
     @keyframes float {
       0%, 100% { transform: translateY(0) scale(1); }
@@ -34,6 +25,8 @@
 
     .landing-right .landing-logo {
       max-width: 80px;
+      width: 80px;
+      height: auto;
       margin-bottom: 32px;
       filter: drop-shadow(0 4px 12px rgba(29, 155, 240, 0.3));
     }
@@ -59,46 +52,9 @@
       outline: none;
     }
 
-    .landing-right label {
-      color: var(--text-primary);
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-      font-size: 15px;
-    }
-
-    .auth-btn {
+    .landing-right .auth-btn {
       width: 100%;
       max-width: 380px;
-      padding: 0.75rem 1rem;
-      border-radius: 30px;
-      font-weight: 700;
-      font-size: 17px;
-      transition: all 0.2s ease;
-      text-align: center;
-    }
-
-    .auth-btn.primary {
-      background-color: var(--primary-color);
-      color: #fff;
-      border: none;
-    }
-
-    .auth-btn.primary:hover {
-      background-color: var(--primary-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(29, 155, 240, 0.3);
-    }
-
-    .auth-btn.secondary {
-      background-color: transparent;
-      border: 1px solid var(--border-color);
-      color: var(--primary-color);
-      
-    }
-
-    .auth-btn.secondary:hover {
-      background-color: rgba(29, 155, 240, 0.1);
-      border-color: var(--primary-color);
     }
 
     .alert {
@@ -108,11 +64,6 @@
       border: 1px solid;
       animation: slideIn 0.3s ease;
       max-width: 380px;
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .alert-danger {
@@ -127,76 +78,55 @@
       color: #00ba7c;
     }
 
-    .alert-info {
-      background: rgba(29, 155, 240, 0.1);
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-    }
-
-    .quick-links {
-      color: var(--text-secondary);
-      font-size: 15px;
-    }
-
     .quick-links a {
       color: var(--primary-color);
       text-decoration: none;
+      transition: all 0.2s ease;
     }
 
     .quick-links a:hover {
       text-decoration: underline;
       color: var(--primary-hover);
     }
-
-    @media (max-width: 992px) {
-      .landing-container { flex-direction: column; }
-      .landing-left img { max-width: 250px; }
-      .landing-right .landing-logo { max-width: 60px; }
-      .landing-title { font-size: 48px; }
-      .landing-subtitle { font-size: 24px; }
-    }
-
-    @media (max-width: 768px) {
-      .landing-left { min-height: 40vh; padding: 40px 20px; }
-      .landing-left img { max-width: 200px; }
-      .landing-right { padding: 40px 20px; }
-      .landing-title { font-size: 36px; }
-      .landing-subtitle { font-size: 20px; }
-    }
   </style>
 </head>
-
 <body>
-  <div class="landing-container d-flex">
-    <!-- Left side with floating logo -->
-    <div class="landing-left d-flex align-items-center justify-content-center flex-fill">
+  <div class="landing-container">
+    <div class="landing-left">
       <img src="{% static 'images/logo14.png' %}" alt="Logo" />
     </div>
-
-    <!-- Right side registration form -->
-    <div class="landing-right d-flex flex-column align-items-center justify-content-center flex-fill">
+    
+    <div class="landing-right">
       <img src="{% static 'images/logo14.png' %}" alt="Logo" class="landing-logo" />
       <h1 class="landing-title">Create your account</h1>
-      <h2 class="landing-subtitle mb-4">Join the conversation.</h2>
+      <h2 class="landing-subtitle">Join SocialX today!</h2>
 
       {% if messages %}
         {% for message in messages %}
-          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          <div class="alert alert-{{ message.tags }} w-100">{{ message }}</div>
         {% endfor %}
       {% endif %}
 
-      <form method="post" action="{% url 'register' %}" id="registerForm">
+      <!-- Registration Form -->
+      <form method="post" action="{% url 'register' %}">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="auth-btn primary">Create account</button>
+        {% for field in form %}
+          <div class="mb-3">
+            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div class="text-danger small">{{ field.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <button type="submit" class="auth-btn secondary">Sign up</button>
       </form>
 
       <p class="text-secondary mt-3">Already have an account?</p>
-      <a href="{% url 'login' %}" class="auth-btn secondary mt-2" style="position: relative;">Sign in</a>
+      <a class="auth-btn primary" href="{% url 'login' %}">Sign in</a>
 
       <div class="quick-links mt-4">
         Quick links:
-        <a href="{% url 'home' %}">Home</a> ·
         <a href="{% url 'login' %}">Login</a>
       </div>
     </div>
@@ -204,32 +134,15 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Animate appearance
     document.addEventListener('DOMContentLoaded', function() {
-      const right = document.querySelector('.landing-right');
-      right.style.opacity = '0';
-      right.style.transform = 'translateX(20px)';
+      const landingRight = document.querySelector('.landing-right');
+      landingRight.style.opacity = '0';
+      landingRight.style.transform = 'translateX(20px)';
       setTimeout(() => {
-        right.style.transition = 'all 0.6s ease';
-        right.style.opacity = '1';
-        right.style.transform = 'translateX(0)';
+        landingRight.style.transition = 'all 0.6s ease';
+        landingRight.style.opacity = '1';
+        landingRight.style.transform = 'translateX(0)';
       }, 100);
-
-      // Auto style Django form inputs
-      const form = document.querySelector('#registerForm');
-      form.querySelectorAll('input, select, textarea').forEach(el => {
-        el.classList.add('form-control');
-      });
-      form.querySelectorAll('label').forEach(label => {
-        label.classList.add('form-label');
-      });
-
-      // Button loading animation
-      form.addEventListener('submit', e => {
-        const btn = form.querySelector('button[type="submit"]');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
-        btn.disabled = true;
-      });
     });
   </script>
 </body>

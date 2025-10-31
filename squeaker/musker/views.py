@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Profile, Meep
-from .forms import MeepForm, ProfileEditForm
+from .forms import MeepForm, ProfileEditForm , SignUpForm
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -80,7 +80,7 @@ def login_user(request):
 
 def register_user(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
             username = form.cleaned_data['username']
@@ -90,7 +90,8 @@ def register_user(request):
             messages.success(request, 'Account created successfully!')
             return redirect('home')
     else:
-        form = UserCreationForm()
+        form = SignUpForm()  # create empty form for GET requests
+
     return render(request, 'register.html', {'form': form})
 
 def logout_user(request):
