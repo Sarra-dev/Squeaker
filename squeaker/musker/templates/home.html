@@ -100,10 +100,25 @@
                                         <i class="fas fa-retweet"></i>
                                         <span>0</span>
                                     </button>
-                                    <button class="action-button like">
-                                        <i class="far fa-heart"></i>
-                                        <span>0</span>
-                                    </button>
+                                    {% if user in meep.likes.all %}
+                                        <!-- If user already liked the post -->
+                                        <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-button like liked">
+                                                <i class="fas fa-heart"></i>  <!-- solid heart -->
+                                                <span>{{ meep.number_of_likes }}</span>
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <!-- If user has not liked the post -->
+                                        <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-button like">
+                                                <i class="far fa-heart"></i>  <!-- regular (empty) heart -->
+                                                <span>{{ meep.number_of_likes }}</span>
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                     <button class="action-button">
                                         <i class="fas fa-chart-simple"></i>
                                         <span>0</span>
