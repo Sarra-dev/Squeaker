@@ -112,3 +112,34 @@ def meep_like(request, pk):
     else:
         messages.success(request, 'You Must Be Logged In To View That Page ...')
         return redirect('home')
+    
+def delete_meep(request, pk):
+    if request.user.is_authenticated:
+        meep = get_object_or_404(Meep, id=pk)
+        if request.user.get_username() == meep.user.get_username():
+            meep.delete()
+            messages.success(request, "You have deleted the meep.")
+            redirect_url = request.META.get("HTTP_REFERER", reverse_lazy("home"))
+            return redirect(redirect_url)
+        else:
+            messages.success(
+                request, "That's not your meep. You cannot delete it!."
+            )
+            redirect_url = request.META.get("HTTP_REFERER", reverse_lazy("home"))
+            return redirect(redirect_url)
+
+    else:
+        messages.success(request, "You must be logged in to delete a meep")
+        redirect_url = request.META.get("HTTP_REFERER", reverse_lazy("home"))
+        return redirect(redirect_url)
+    
+def meep_show(request, pk):
+    if request.user.is_authenticated:
+        meep = get_object_or_404(Meep, id=pk)
+        context = {"meep": meep}
+        if meep:
+            return render(request, "meep_show.html", context)
+        else:
+            messages.success(request, "That Meep does not exist.")
+    else:
+        return redirect("home")

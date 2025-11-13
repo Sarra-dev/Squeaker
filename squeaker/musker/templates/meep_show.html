@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squeaker - Meep</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
+</head>
+<body>
+    <div class="main-container">
+        {% include 'navbar.html' %}
+
+        <div class="main-content">
+            <div class="content-header">
+                <div class="header-content">
+                    <div class="header-title">
+                        <div class="header-name">Meep</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if meep %}
+    <div class="post-card">
+        <div class="post-header">
+            <a href="{% url 'profile' meep.user.pk %}">
+                {% if meep.user.profile.profile_image %}
+                    <img src="{{ meep.user.profile.profile_image.url }}" alt="{{ meep.user.username }}" class="post-avatar">
+                {% else %}
+                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ meep.user.username }}" class="post-avatar">
+                {% endif %}
+            </a>
+            <div class="post-content">
+                <div class="post-user-info">
+                    <a href="{% url 'profile' meep.user.pk %}" style="text-decoration: none;">
+                        <span class="post-username">{{ meep.user.username }}</span>
+                    </a>
+                    {% if meep.user.is_staff %}
+                        <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
+                    {% endif %}
+                    <span class="post-handle">@{{ meep.user.username }}</span>
+                    <span class="post-date">{{ meep.created_at|timesince }}</span>
+                </div>
+                <div class="post-body">{{ meep.body }}</div>
+                <div class="post-actions">
+                    <button class="action-button">
+                        <i class="far fa-comment"></i>
+                        <span>0</span>
+                    </button>
+                    <button class="action-button">
+                        <i class="fas fa-retweet"></i>
+                        <span>0</span>
+                    </button>
+
+                    {% if user in meep.likes.all %}
+                        <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="action-button like liked">
+                                <i class="fas fa-heart"></i>
+                                <span>{{ meep.number_of_likes }}</span>
+                            </button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="action-button like">
+                                <i class="far fa-heart"></i>
+                                <span>{{ meep.number_of_likes }}</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <button class="action-button">
+                        <i class="fas fa-chart-simple"></i>
+                        <span>0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <i class="far fa-comment"></i>
+        <h3>Meep not found</h3>
+        <p>This post doesn’t exist or was deleted.</p>
+    </div>
+{% endif %}
+
+        </div>
+
+        {% include 'trending.html' %}
+    </div>
+</body>
+</html>

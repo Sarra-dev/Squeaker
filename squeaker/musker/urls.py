@@ -16,4 +16,6 @@ urlpatterns = [
     path('register/', views.register_user, name='register'),
     path('logout/', views.logout_user, name='logout'),
     path('meep_like/<int:pk>', views.meep_like, name='meep_like'),
+    path('delete_meep/<int:pk>', views.delete_meep, name='delete_meeps'),
+    path('meep_show/<int:pk>', views.meep_show, name='meep_show'),
 ]
