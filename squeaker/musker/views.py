@@ -24,9 +24,31 @@ def home(request):
 
 @login_required
 def profile_list(request):
-    profiles = Profile.objects.exclude(user=request.user)
-    return render(request, 'profile_list.html', {"profiles": profiles})
-
+    if request.user.is_authenticated:
+        # Get all profiles except the current user
+        profiles = Profile.objects.exclude(user=request.user)
+        
+        # Handle follow/unfollow POST request
+        if request.method == "POST":
+            profile_id = request.POST.get('profile_id')
+            action = request.POST.get('follow')
+            
+            if profile_id:
+                profile_to_follow = Profile.objects.get(user__id=profile_id)
+                
+                if action == "unfollow":
+                    request.user.profile.follows.remove(profile_to_follow)
+                elif action == "follow":
+                    request.user.profile.follows.add(profile_to_follow)
+                
+                request.user.profile.save()
+            
+            # Redirect back to profile_list to prevent form resubmission
+            return redirect('profile_list')
+        
+        return render(request, 'profile_list.html', {"profiles": profiles})
+    else:
+        return redirect('home')
 def profile(request, pk):
     if not request.user.is_authenticated:
         messages.error(request, "You must be logged in to view profiles")
@@ -97,3 +119,6 @@ def logout_user(request):
     logout(request)
     messages.success(request, 'You have been logged out')
     return redirect('login')
+def explore(request):
+    meeps = Meep.objects.all().order_by("-created_at")
+    return render(request, 'explore.html', {"meeps": meeps})

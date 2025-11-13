@@ -21,7 +21,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="{% url 'explore' %}" class="nav-link">
                     <i class="fas fa-search"></i>
                     <span>Explore</span>
                 </a>
@@ -30,7 +30,7 @@
                 <a href="#" class="nav-link">
                     <div style="position: relative;">
                         <i class="fas fa-bell"></i>
-                        <span class="badge">3</span>
+                        
                     </div>
                     <span>Notifications</span>
                 </a>
@@ -53,12 +53,7 @@
                     <span>Communities</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link">
-                    <i class="fab fa-twitter"></i>
-                    <span>Premium</span>
-                </a>
-            </li>
+            
             <li class="nav-item">
                 <a href="{% url 'profile' request.user.pk %}" class="nav-link">
                     <i class="fas fa-user"></i>
@@ -74,7 +69,7 @@
         </ul>
 
         <!-- Post Button -->
-        <button class="post-button">Post</button>
+        <button class="post-button" onclick="openPostModal()">Post</button>
     </nav>
 
     <!-- User Menu -->
@@ -101,12 +96,158 @@
         </div>
     </div>
 </div>
+<div class="post-modal" id="postModal">
+    <div class="post-modal-overlay" onclick="closePostModal()"></div>
+    <div class="post-modal-content">
+        <div class="post-modal-header">
+            <button class="modal-close-btn" onclick="closePostModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="post-modal-body">
+            <div class="post-form-header">
+                {% if request.user.profile.profile_image %}
+                    <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" class="post-form-avatar">
+                {% else %}
+                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ request.user.username }}" class="post-form-avatar">
+                {% endif %}
+                <form method="POST" action="{% url 'home' %}" class="post-form" id="modalPostForm">
+                    {% csrf_token %}
+                    <textarea 
+                        name="body" 
+                        placeholder="What's happening?" 
+                        class="post-textarea"
+                        maxlength="200"
+                        rows="3"
+                    ></textarea>
+                    <div class="post-form-actions">
+                        <div class="post-form-icons">
+                            <button type="button" class="icon-btn" title="Media">
+                                <i class="far fa-image"></i>
+                            </button>
+                            <button type="button" class="icon-btn" title="GIF">
+                                <i class="fas fa-file-image"></i>
+                            </button>
+                            <button type="button" class="icon-btn" title="Poll">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button type="button" class="icon-btn" title="Emoji">
+                                <i class="far fa-smile"></i>
+                            </button>
+                            <button type="button" class="icon-btn" title="Schedule">
+                                <i class="far fa-calendar"></i>
+                            </button>
+                        </div>
+                        <button type="submit" class="btn-post">Post</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Post Modal Styles */
+.post-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+}
+
+.post-modal.show {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 5vh;
+}
+
+.post-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(91, 112, 131, 0.4);
+}
+
+.post-modal-content {
+    position: relative;
+    background-color: var(--bg-primary, #ffffff);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 0 15px rgba(101, 119, 134, 0.2);
+    z-index: 1001;
+}
+
+.post-modal-header {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color, #eff3f4);
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-primary, #0f1419);
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.modal-close-btn:hover {
+    background-color: rgba(15, 20, 25, 0.1);
+}
+
+.post-modal-body {
+    padding: 15px;
+}
+
+.post-modal-body .post-form-header {
+    display: flex;
+    gap: 12px;
+}
+
+.post-modal-body .post-form {
+    flex: 1;
+}
+</style>
 
 <script>
+// Update the existing script section in navbar.html
+
 function toggleUserDropdown() {
     const dropdown = document.getElementById('userDropdown');
     if (dropdown) {
         dropdown.classList.toggle('show');
+    }
+}
+
+// Open post modal
+function openPostModal() {
+    const modal = document.getElementById('postModal');
+    if (modal) {
+        modal.classList.add('show');
+        // Focus on textarea
+        const textarea = modal.querySelector('textarea');
+        if (textarea) {
+            setTimeout(() => textarea.focus(), 100);
+        }
+    }
+}
+
+// Close post modal
+function closePostModal() {
+    const modal = document.getElementById('postModal');
+    if (modal) {
+        modal.classList.remove('show');
     }
 }
 
@@ -119,5 +260,13 @@ document.addEventListener('click', function(event) {
         dropdown.classList.remove('show');
     }
 });
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closePostModal();
+    }
+});
 </script>
+
 {% endif %}

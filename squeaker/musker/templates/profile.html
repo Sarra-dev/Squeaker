@@ -33,7 +33,10 @@
                 <!-- Cover Image -->
                 <div class="cover-image-container">
                     {% if profile.cover_image %}
-                        <img src="{{ profile.cover_image.url }}" alt="Cover" class="cover-image">
+                        <img src="{{ profile.cover_image.url }}"  class="cover-image">
+                    
+                    {% else %}
+                       <img src="{% static 'images\logo1-removebg-preview.png' %}" alt="Cover" class="cover-image">
                     {% endif %}
                 </div>
 

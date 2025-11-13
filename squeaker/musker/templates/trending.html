@@ -1,0 +1,161 @@
+{% load static %}
+<!-- Right Sidebar - Trending & Suggestions -->
+<aside class="trending-sidebar">
+    <!-- Search Box -->
+    <div class="search-box">
+        <div style="position: relative;">
+            <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 16px;"></i>
+            <input 
+                type="search" 
+                class="search-input"
+                placeholder="Search Squeaker"
+                aria-label="Search"
+            >
+        </div>
+    </div>
+
+
+    <div class="widget">
+        <div class="widget-header">What's happening</div>
+        
+        
+        <div class="widget-item">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
+                        Trending in Technology
+                    </div>
+                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
+                        #OpenSource
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">
+                        45.2K posts
+                    </div>
+                </div>
+                <button class="icon-button" style="margin-left: 8px;">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Trending Item 2 -->
+        <div class="widget-item">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
+                        Technology · Trending
+                    </div>
+                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
+                        Artificial Intelligence
+                    </div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">
+                        127K posts
+                    </div>
+                </div>
+                <button class="icon-button" style="margin-left: 8px;">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+            </div>
+        </div>
+      
+    </div>
+
+    <!-- Who to Follow Widget -->
+    {% if request.user.is_authenticated %}
+    <div class="widget">
+        <div class="widget-header">Who to follow</div>
+        
+        {% if suggested_profiles %}
+            {% for profile in suggested_profiles %}
+                <div class="widget-item">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <a href="{% url 'profile' profile.user.id %}" style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 0; text-decoration: none;">
+                            {% if profile.profile_image %}
+                                <img 
+                                    src="{{ profile.profile_image.url }}" 
+                                    alt="{{ profile.user.username }}" 
+                                    style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; object-fit: cover;"
+                                >
+                            {% else %}
+                                <img 
+                                    src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" 
+                                    alt="{{ profile.user.username }}" 
+                                    style="width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; object-fit: cover;"
+                                >
+                            {% endif %}
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 700; font-size: 15px; color: var(--text-primary); display: flex; align-items: center; gap: 4px;">
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        {{ profile.user.get_full_name|default:profile.user.username }}
+                                    </span>
+                                    {% if profile.user.is_staff %}
+                                        <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px; flex-shrink: 0;"></i>
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 15px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @{{ profile.user.username }}
+                                </div>
+                            </div>
+                        </a>
+                        <form method="POST" action="{% url 'profile' profile.user.id %}" style="flex-shrink: 0; margin-left: 12px;">
+                            {% csrf_token %}
+                            {% if request.user.profile in profile.followed_by.all %}
+                                <button type="submit" name="follow" value="unfollow" style="
+                                    background: transparent;
+                                    color: var(--text-primary);
+                                    border: 1px solid var(--border-color);
+                                    padding: 6px 16px;
+                                    height: 32px;
+                                    border-radius: 9999px;
+                                    font-weight: 700;
+                                    font-size: 14px;
+                                    cursor: pointer;
+                                    transition: all 0.2s ease;
+                                " onmouseover="this.style.background='rgba(244, 33, 46, 0.1)'; this.style.borderColor='rgba(244, 33, 46, 0.4)'; this.style.color='var(--danger)'; this.textContent='Unfollow';" onmouseout="this.style.background='transparent'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-primary)'; this.textContent='Following';">
+                                    Following
+                                </button>
+                            {% else %}
+                                <button type="submit" name="follow" value="follow" style="
+                                    background: var(--text-primary);
+                                    color: var(--bg-primary);
+                                    border: none;
+                                    padding: 6px 16px;
+                                    height: 32px;
+                                    border-radius: 9999px;
+                                    font-weight: 700;
+                                    font-size: 14px;
+                                    cursor: pointer;
+                                    transition: all 0.2s ease;
+                                " onmouseover="this.style.background='#272c30'" onmouseout="this.style.background='var(--text-primary)'">
+                                    Follow
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- Fallback if no suggestions -->
+            <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 15px;">
+                No suggestions available
+            </div>
+        {% endif %}
+
+        <!-- Show More Link -->
+        <a href="{% url 'profile_list' %}" class="widget-item" style="color: var(--primary-color); cursor: pointer; text-decoration: none;">
+            Show more
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Footer Links -->
+    <div style="padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--text-secondary);">
+        <a href="#" style="color: var(--text-secondary);">Terms of Service</a>
+        <a href="#" style="color: var(--text-secondary);">Privacy Policy</a>
+        <a href="#" style="color: var(--text-secondary);">Cookie Policy</a>
+        <a href="#" style="color: var(--text-secondary);">Accessibility</a>
+        <a href="#" style="color: var(--text-secondary);">Ads info</a>
+        <a href="#" style="color: var(--text-secondary);">More</a>
+        <span>© 2025 Squeaker</span>
+    </div>
+</aside>

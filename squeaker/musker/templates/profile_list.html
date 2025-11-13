@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Communities / X</title>
+    <title>Communities</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
 </head>
@@ -33,10 +33,9 @@
                     <div class="suggestion-card">
                         <a href="{% url 'profile' profile.user.id %}" class="profile-link">
                             {% if profile.profile_image %}
-
-                                <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" class="img-fluid rounded-start">
+                                <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
                             {% else %}
-                                <img src="{/media/profile_images/default_profile.png }" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
+                                <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
                             {% endif %}
                         </a>
                         <div class="suggestion-card-info">
@@ -56,11 +55,12 @@
                                 <span><i class="fas fa-calendar-alt"></i> Joined {{ profile.date_created|date:"F Y" }}</span>
                             </div>
                         </div>
-                        <form method="POST" action="{% url 'profile' profile.user.id %}" style="margin-left: auto;">
+                        <form method="POST" action="{% url 'profile_list' %}" style="margin-left: auto;">
                             {% csrf_token %}
+                            <input type="hidden" name="profile_id" value="{{ profile.user.id }}">
                             {% if request.user.profile in profile.followed_by.all %}
                                 <button type="submit" name="follow" value="unfollow" class="btn-following-small">
-                                    Following
+                                    
                                 </button>
                             {% else %}
                                 <button type="submit" name="follow" value="follow" class="follow-btn-small">
