@@ -17,4 +17,7 @@ urlpatterns = [
     path('logout/', views.logout_user, name='logout'),
     path('meep_like/<int:pk>', views.meep_like, name='meep_like'),
     path('explore/', views.explore, name='explore'),
+    path('meep_show/<int:pk>', views.meep_show, name='meep_show'),
+    path('meep/<int:meep_id>/comment/', views.meep_comment, name='meep_comment'),
+
 ]

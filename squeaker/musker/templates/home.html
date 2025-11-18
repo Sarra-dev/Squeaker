@@ -28,10 +28,10 @@
             {% if form %}
             <div class="post-form-container">
                 <div class="post-form-header">
-                    {% if request.user.profile.profile_image %}
+                    {% if request.user.is_authenticated and request.user.profile and request.user.profile.profile_image %}
                         <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" class="post-form-avatar">
                     {% else %}
-                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ request.user.username }}" class="post-form-avatar">
+                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="Default Avatar" class="post-form-avatar">
                     {% endif %}
                     <form method="POST" class="post-form">
                         {% csrf_token %}
@@ -73,7 +73,7 @@
                     <div class="post-card">
                         <div class="post-header">
                             <a href="{% url 'profile' meep.user.pk %}">
-                                {% if meep.user.profile.profile_image %}
+                                {% if meep.user.profile and meep.user.profile.profile_image %}
                                     <img src="{{ meep.user.profile.profile_image.url }}" alt="{{ meep.user.username }}" class="post-avatar">
                                 {% else %}
                                     <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ meep.user.username }}" class="post-avatar">
@@ -92,10 +92,10 @@
                                 </div>
                                 <div class="post-body">{{ meep.body }}</div>
                                 <div class="post-actions">
-                                    <button class="action-button">
+                                    <a href="{% url 'meep_show' pk=meep.id %}" class="action-button" style="text-decoration: none;">
                                         <i class="far fa-comment"></i>
-                                        <span>0</span>
-                                    </button>
+                                        <span>{{ meep.comments.count }}</span>
+                                    </a>
                                     <button class="action-button">
                                         <i class="fas fa-retweet"></i>
                                         <span>0</span>
@@ -105,7 +105,7 @@
                                         <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="action-button like liked">
-                                                <i class="fas fa-heart"></i>  <!-- solid heart -->
+                                                <i class="fas fa-heart"></i>
                                                 <span>{{ meep.number_of_likes }}</span>
                                             </button>
                                         </form>
@@ -114,18 +114,19 @@
                                         <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="action-button like">
-                                                <i class="far fa-heart"></i>  <!-- regular (empty) heart -->
+                                                <i class="far fa-heart"></i>
                                                 <span>{{ meep.number_of_likes }}</span>
                                             </button>
                                         </form>
                                     {% endif %}
+                                    
                                     <button class="action-button">
                                         <i class="fas fa-chart-simple"></i>
                                         <span>0</span>
                                     </button>
-                                    <button class="action-button">
+                                    <a href="{% url 'meep_show' pk=meep.id %}" class="action-button" style="text-decoration: none; color: inherit;">
                                         <i class="fas fa-arrow-up-from-bracket"></i>
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>

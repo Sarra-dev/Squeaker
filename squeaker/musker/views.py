@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Profile, Meep
+from .models import Profile, Meep, Comment
 from .forms import MeepForm, ProfileEditForm , SignUpForm
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -137,3 +137,45 @@ def meep_like(request, pk):
 def explore(request):
     meeps = Meep.objects.all().order_by("-created_at")
     return render(request, 'explore.html', {"meeps": meeps})
+
+def meep_show(request, pk):
+    meep = get_object_or_404(Meep, id=pk)
+    if meep:
+        return render(request, 'show_meep.html', {"meep": meep})
+    else:
+        messages.success(request, 'That Squeak does not exist..')
+        return redirect('home')
+    
+@login_required
+def meep_comment(request, meep_id):
+    """Handle comment submission for a meep"""
+    meep = get_object_or_404(Meep, id=meep_id)
+    
+    if request.method == 'POST':
+        comment_body = request.POST.get('comment_body', '').strip()
+        
+        if comment_body:
+            # Create the comment
+            Comment.objects.create(
+                meep=meep,
+                user=request.user,
+                content=comment_body
+            )
+            messages.success(request, 'Comment posted successfully!')
+        else:
+            messages.error(request, 'Comment cannot be empty.')
+    
+    # Redirect back to the meep detail page
+    return redirect('meep_show', pk=meep_id)
+
+
+def meep_show(request, pk):
+    """Display a single meep with its comments"""
+    meep = get_object_or_404(Meep, id=pk)
+    comments = meep.comments.all()  # Get all comments for this meep
+    
+    context = {
+        'meep': meep,
+        'comments': comments,
+    }
+    return render(request, 'show_meep.html', context)
