@@ -81,3 +81,40 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} → {self.meep.id}"
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    content = models.TextField(max_length=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"{self.sender.username} → {self.recipient.username}: {self.content[:30]}"
+
+class Conversation(models.Model):
+    participants = models.ManyToManyField(User, related_name='conversations')
+    last_message = models.ForeignKey(Message, on_delete=models.SET_NULL, null=True, blank=True, related_name='conversation_last')
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-updated_at']
+    
+    def __str__(self):
+        users = self.participants.all()
+        return f"Conversation: {', '.join([u.username for u in users])}"
+    
+    def get_other_user(self, current_user):
+        """Get the other participant in a 1-on-1 conversation"""
+        return self.participants.exclude(id=current_user.id).first()
+    
+    def unread_count(self, user):
+        """Count unread messages for a specific user"""
+        return Message.objects.filter(
+            sender__in=self.participants.all(),
+            recipient=user,
+            is_read=False
+        ).count()

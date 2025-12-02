@@ -1,0 +1,323 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Squeaker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #14171a;
+        }
+
+        .main-container {
+            display: flex;
+            max-width: 1280px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        /* Messages Container */
+        .messages-container {
+            flex: 1;
+            border-left: 1px solid #e1e8ed;
+            border-right: 1px solid #e1e8ed;
+            max-width: 600px;
+            background-color: #ffffff;
+        }
+
+        .messages-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 16px;
+            border-bottom: 1px solid #e1e8ed;
+            z-index: 10;
+        }
+
+        .messages-header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #14171a;
+        }
+
+        .search-box {
+            padding: 16px;
+            border-bottom: 1px solid #e1e8ed;
+            background-color: #ffffff;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #f5f8fa;
+            border: 1px solid #e1e8ed;
+            border-radius: 9999px;
+            color: #14171a;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            background-color: #ffffff;
+            border-color: #1da1f2;
+            box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #657786;
+        }
+
+        /* Conversations List */
+        .conversations-list {
+            overflow-y: auto;
+            background-color: #ffffff;
+        }
+
+        .conversation-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #e1e8ed;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .conversation-item:hover {
+            background-color: #f5f8fa;
+        }
+
+        .conversation-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 12px;
+            flex-shrink: 0;
+            border: 2px solid #e1e8ed;
+        }
+
+        .conversation-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .conversation-user {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .conversation-name {
+            font-weight: 700;
+            font-size: 15px;
+            color: #14171a;
+        }
+
+        .conversation-username {
+            font-size: 15px;
+            color: #657786;
+            margin-left: 4px;
+        }
+
+        .conversation-time {
+            font-size: 14px;
+            color: #657786;
+        }
+
+        .conversation-preview {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .conversation-text {
+            font-size: 15px;
+            color: #657786;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .conversation-text.unread {
+            color: #14171a;
+            font-weight: 600;
+        }
+
+        .unread-badge {
+            background-color: #1da1f2;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            margin-left: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background-color: #ffffff;
+        }
+
+        .empty-state i {
+            font-size: 80px;
+            color: #1da1f2;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h2 {
+            font-size: 31px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #14171a;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            color: #657786;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .new-message-btn {
+            background-color: #1da1f2;
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .new-message-btn:hover {
+            background-color: #1a91da;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .messages-container {
+                max-width: 100%;
+                border-left: none;
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Include Sidebar Navigation -->
+        {% include 'navbar.html' %}
+
+        <!-- Messages Container -->
+        <div class="messages-container">
+            <!-- Header -->
+            <div class="messages-header">
+                <h1>Messages</h1>
+            </div>
+
+            <!-- Search Box -->
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search Direct Messages" id="searchInput">
+            </div>
+
+            <!-- Conversations List -->
+            <div class="conversations-list" id="conversationsList">
+                {% if conversations %}
+                    {% for conversation in conversations %}
+                        <a href="{% url 'conversation_detail' conversation.get_other_user.id %}" class="conversation-item">
+                            <img src="{% if conversation.get_other_user.profile.profile_image %}{{ conversation.get_other_user.profile.profile_image.url }}{% else %}https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png{% endif %}" 
+                                 alt="{{ conversation.get_other_user.username }}" 
+                                 class="conversation-avatar">
+                            
+                            <div class="conversation-content">
+                                <div class="conversation-header">
+                                    <div class="conversation-user">
+                                        <span class="conversation-name">
+                                            {{ conversation.get_other_user.get_full_name|default:conversation.get_other_user.username }}
+                                        </span>
+                                        <span class="conversation-username">@{{ conversation.get_other_user.username }}</span>
+                                    </div>
+                                    {% if conversation.last_message %}
+                                    <span class="conversation-time">
+                                        {{ conversation.last_message.created_at|timesince }} ago
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="conversation-preview">
+                                    {% if conversation.last_message %}
+                                        <span class="conversation-text {% if conversation.unread > 0 %}unread{% endif %}">
+                                            {% if conversation.last_message.sender == request.user %}You: {% endif %}
+                                            {{ conversation.last_message.content|truncatewords:8 }}
+                                        </span>
+                                        {% if conversation.unread > 0 %}
+                                            <span class="unread-badge">{{ conversation.unread }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="conversation-text">Start a conversation</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="far fa-envelope"></i>
+                        <h2>Welcome to your inbox!</h2>
+                        <p>Drop a line, share posts and more with private conversations between you and others on Squeaker.</p>
+                        <a href="{% url 'profile_list' %}" class="new-message-btn">Start a conversation</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const conversationItems = document.querySelectorAll('.conversation-item');
+
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            conversationItems.forEach(item => {
+                const name = item.querySelector('.conversation-name').textContent.toLowerCase();
+                const username = item.querySelector('.conversation-username').textContent.toLowerCase();
+                
+                if (name.includes(searchTerm) || username.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

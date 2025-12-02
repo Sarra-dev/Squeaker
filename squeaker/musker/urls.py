@@ -20,4 +20,10 @@ urlpatterns = [
     path('meep_show/<int:pk>', views.meep_show, name='meep_show'),
     path('meep/<int:meep_id>/comment/', views.meep_comment, name='meep_comment'),
 
+    path('messages/', views.messages_view, name='messages'),
+    path('messages/<int:user_id>/', views.conversation_detail, name='conversation_detail'),
+    path('messages/send/', views.send_message, name='send_message'),
+    path('messages/get/<int:user_id>/', views.get_new_messages, name='get_new_messages'),
+    path('messages/start/<int:user_id>/', views.start_conversation, name='start_conversation'),
+
 ]

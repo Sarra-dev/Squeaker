@@ -1,0 +1,600 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with @{{ other_user.username }} - Squeaker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #14171a;
+        }
+
+        .main-container {
+            display: flex;
+            max-width: 1280px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            border-left: 1px solid #e1e8ed;
+            border-right: 1px solid #e1e8ed;
+            max-width: 600px;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Chat Header */
+        .chat-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            padding: 12px 16px;
+            border-bottom: 1px solid #e1e8ed;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #1da1f2;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-btn:hover {
+            background-color: rgba(29, 161, 242, 0.1);
+        }
+
+        .chat-user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .chat-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e1e8ed;
+        }
+
+        .chat-user-details h2 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #14171a;
+        }
+
+        .chat-user-details p {
+            font-size: 13px;
+            color: #657786;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-action-btn {
+            background: none;
+            border: none;
+            color: #1da1f2;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .header-action-btn:hover {
+            background-color: rgba(29, 161, 242, 0.1);
+        }
+
+        /* Messages Area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background-color: #f5f8fa;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 2px solid #e1e8ed;
+        }
+
+        .message-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message.sent .message-content {
+            align-items: flex-end;
+        }
+
+        .message-bubble {
+            background-color: #1da1f2;
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 20px;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.received .message-bubble {
+            background-color: #e1e8ed;
+            color: #14171a;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.sent .message-bubble {
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 13px;
+            color: #657786;
+            padding: 0 8px;
+        }
+
+        /* Message Input */
+        .message-input-container {
+            position: sticky;
+            bottom: 0;
+            background-color: #ffffff;
+            border-top: 1px solid #e1e8ed;
+            padding: 16px;
+        }
+
+        .message-input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            background-color: #f5f8fa;
+            border: 1px solid #e1e8ed;
+            border-radius: 24px;
+            padding: 12px 16px;
+        }
+
+        .message-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #14171a;
+            font-size: 15px;
+            outline: none;
+            resize: none;
+            max-height: 120px;
+            font-family: inherit;
+            line-height: 20px;
+        }
+
+        .message-input::placeholder {
+            color: #657786;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-action-btn {
+            background: none;
+            border: none;
+            color: #1da1f2;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 4px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .input-action-btn:hover {
+            background-color: rgba(29, 161, 242, 0.1);
+        }
+
+        .send-btn {
+            background-color: #1da1f2;
+            color: #ffffff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background-color: #1a91da;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Empty State */
+        .empty-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+            background-color: #f5f8fa;
+        }
+
+        .empty-chat img {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin-bottom: 16px;
+            border: 2px solid #e1e8ed;
+        }
+
+        .empty-chat h3 {
+            font-size: 23px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #14171a;
+        }
+
+        .empty-chat p {
+            font-size: 15px;
+            color: #657786;
+            margin-bottom: 4px;
+        }
+
+        /* Scrollbar */
+        .messages-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: #f5f8fa;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: #e1e8ed;
+            border-radius: 3px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb:hover {
+            background: #ccd6dd;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 16px;
+            background-color: #e1e8ed;
+            border-radius: 18px;
+            width: fit-content;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: #657786;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-container {
+                max-width: 100%;
+                border-left: none;
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Include Sidebar Navigation -->
+        {% include 'navbar.html' %}
+
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <a href="{% url 'messages' %}" class="back-btn" title="Back to messages">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                
+                <a href="{% url 'profile' other_user.pk %}" class="chat-user-info">
+                    <img src="{% if other_user.profile.profile_image %}{{ other_user.profile.profile_image.url }}{% else %}https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png{% endif %}" 
+                         alt="{{ other_user.username }}" 
+                         class="chat-avatar">
+                    <div class="chat-user-details">
+                        <h2>{{ other_user.get_full_name|default:other_user.username }}</h2>
+                        <p>@{{ other_user.username }}</p>
+                    </div>
+                </a>
+
+                <div class="header-actions">
+                    <button class="header-action-btn" title="Call">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button class="header-action-btn" title="Info">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="messages-area" id="messagesArea">
+                {% if not messages %}
+                <div class="empty-chat">
+                    <img src="{% if other_user.profile.profile_image %}{{ other_user.profile.profile_image.url }}{% else %}https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png{% endif %}" 
+                         alt="{{ other_user.username }}">
+                    <h3>{{ other_user.get_full_name|default:other_user.username }}</h3>
+                    <p>@{{ other_user.username }}</p>
+                    <p style="margin-top: 16px;">Start a conversation with {{ other_user.get_full_name|default:other_user.username }}</p>
+                </div>
+                {% else %}
+                    {% for message in messages %}
+                    <div class="message {% if message.sender == request.user %}sent{% else %}received{% endif %}" data-message-id="{{ message.id }}">
+                        <img src="{% if message.sender.profile.profile_image %}{{ message.sender.profile.profile_image.url }}{% else %}https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png{% endif %}" 
+                             alt="{{ message.sender.username }}" 
+                             class="message-avatar">
+                        <div class="message-content">
+                            <div class="message-bubble">{{ message.content }}</div>
+                            <span class="message-time">{{ message.created_at|date:"g:i A" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <!-- Typing indicator (hidden by default) -->
+                <div class="typing-indicator" id="typingIndicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <!-- Message Input -->
+            <div class="message-input-container">
+                <form id="messageForm" class="message-input-wrapper">
+                    {% csrf_token %}
+                    <input type="hidden" name="recipient_id" value="{{ other_user.id }}">
+                    <textarea 
+                        name="content" 
+                        id="messageInput"
+                        class="message-input" 
+                        placeholder="Start a new message"
+                        rows="1"
+                    ></textarea>
+                    <div class="input-actions">
+                        <button type="button" class="input-action-btn" title="Add photo">
+                            <i class="far fa-image"></i>
+                        </button>
+                        <button type="button" class="input-action-btn" title="Add emoji">
+                            <i class="far fa-smile"></i>
+                        </button>
+                        <button type="submit" class="send-btn" id="sendBtn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const messagesArea = document.getElementById('messagesArea');
+        const otherUserId = {{ other_user.id }};
+        let lastMessageId = {% if messages %}{{ messages.last.id }}{% else %}0{% endif %};
+        let pollingInterval;
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            
+            // Enable/disable send button
+            sendBtn.disabled = !this.value.trim();
+        });
+
+        // Scroll to bottom
+        function scrollToBottom() {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        // Initial scroll
+        scrollToBottom();
+
+        // Send message
+        messageForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const content = messageInput.value.trim();
+            if (!content) return;
+
+            const formData = new FormData(messageForm);
+            
+            try {
+                const response = await fetch('{% url "send_message" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Clear input
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                    sendBtn.disabled = true;
+                    
+                    // Add message to UI
+                    addMessageToUI(data.message, true);
+                    lastMessageId = data.message.id;
+                    scrollToBottom();
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Please try again.');
+            }
+        });
+
+        // Add message to UI
+        function addMessageToUI(message, isSent) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+            messageDiv.setAttribute('data-message-id', message.id);
+            
+            const avatarUrl = message.profile_image || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
+            
+            messageDiv.innerHTML = `
+                <img src="${avatarUrl}" alt="${message.sender}" class="message-avatar">
+                <div class="message-content">
+                    <div class="message-bubble">${escapeHtml(message.content)}</div>
+                    <span class="message-time">${message.created_at}</span>
+                </div>
+            `;
+            
+            // Remove empty state if exists
+            const emptyChat = messagesArea.querySelector('.empty-chat');
+            if (emptyChat) {
+                emptyChat.remove();
+            }
+            
+            messagesArea.appendChild(messageDiv);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Poll for new messages (real-time simulation)
+        async function pollNewMessages() {
+            try {
+                const response = await fetch(`/messages/get/${otherUserId}/?last_message_id=${lastMessageId}`);
+                const data = await response.json();
+                
+                if (data.success && data.messages.length > 0) {
+                    data.messages.forEach(message => {
+                        // Only add if it's from the other user
+                        if (message.sender_id != {{ request.user.id }}) {
+                            addMessageToUI(message, false);
+                        }
+                        lastMessageId = Math.max(lastMessageId, message.id);
+                    });
+                    scrollToBottom();
+                }
+            } catch (error) {
+                console.error('Error polling messages:', error);
+            }
+        }
+
+        // Start polling every 2 seconds for real-time effect
+        pollingInterval = setInterval(pollNewMessages, 2000);
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            clearInterval(pollingInterval);
+        });
+
+        // Handle Enter key (send on Enter, new line on Shift+Enter)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (messageInput.value.trim()) {
+                    messageForm.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+    </script>
+</body>
+</html>

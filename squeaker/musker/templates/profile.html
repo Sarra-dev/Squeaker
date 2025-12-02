@@ -61,9 +61,10 @@
                                 <button class="icon-button">
                                     <i class="fas fa-ellipsis-h"></i>
                                 </button>
-                                <button class="icon-button">
+                                <!-- MESSAGE BUTTON - NOW WITH WORKING LINK -->
+                                <a href="{% url 'start_conversation' profile.user.id %}" class="icon-button" title="Message @{{ profile.user.username }}">
                                     <i class="far fa-envelope"></i>
-                                </button>
+                                </a>
                                 <form method="POST" action="{% url 'profile' profile.user.pk %}" style="display: inline;">
                                     {% csrf_token %}
                                     {% if request.user.profile in profile.followed_by.all %}
@@ -200,5 +201,16 @@
         <!-- Include Right Sidebar -->
         {% include 'trending.html' %}
     </div>
+
+    <style>
+        /* Make sure the icon-button works as a link too */
+        .profile-actions a.icon-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
 </body>
 </html>
