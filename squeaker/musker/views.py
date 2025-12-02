@@ -8,19 +8,25 @@ from django.contrib.auth.forms import UserCreationForm
 
 def home(request):
     if request.user.is_authenticated:
-        form = MeepForm(request.POST or None)
+
         if request.method == "POST":
+            form = MeepForm(request.POST, request.FILES)  # <-- IMPORTANT: request.FILES
             if form.is_valid():
                 meep = form.save(commit=False)
                 meep.user = request.user
                 meep.save()
                 messages.success(request, ("Your Squeak Has Been Posted"))
                 return redirect('home')
+        else:
+            form = MeepForm()
+
         meeps = Meep.objects.all().order_by("-created_at")
         return render(request, 'home.html', {"meeps": meeps, "form": form})
+
     else:
         meeps = Meep.objects.all().order_by("-created_at")
         return render(request, 'home.html', {"meeps": meeps})
+
 
 @login_required
 def profile_list(request):

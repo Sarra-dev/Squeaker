@@ -10,6 +10,7 @@ class Meep(models.Model):
     body = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
     likes = models.ManyToManyField(User , related_name="meep_like" , blank=True)
+    image = models.ImageField(upload_to='meep_images/', blank=True, null=True)
 
     # track or count likes 
     def number_of_likes(self):
@@ -74,6 +75,7 @@ class Comment(models.Model):
     meep = models.ForeignKey("Meep", on_delete=models.CASCADE, related_name="comments")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
+    image = models.ImageField(upload_to='meep_images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
