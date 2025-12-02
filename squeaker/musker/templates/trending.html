@@ -14,50 +14,43 @@
         </div>
     </div>
 
-
+    <!-- What's Happening Widget - DYNAMIC TRENDING -->
     <div class="widget">
         <div class="widget-header">What's happening</div>
         
+        {% if trending_topics %}
+            {% for topic in trending_topics %}
+                <a href="{% url 'hashtag' topic.name %}" class="widget-item" style="text-decoration: none; color: inherit; display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
+                                Trending
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
+                                #{{ topic.name }}
+                            </div>
+                            
+                        </div>
+                        <button class="icon-button" style="margin-left: 8px;" onclick="event.preventDefault(); event.stopPropagation();">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                    </div>
+                </a>
+            {% endfor %}
+        {% else %}
+            <!-- Fallback when no trending topics -->
+            <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 15px;">
+                <p style="margin: 0 0 8px 0;">No trending topics yet</p>
+                <p style="margin: 0; font-size: 13px;">Start using hashtags in your meeps!</p>
+            </div>
+        {% endif %}
         
-        <div class="widget-item">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
-                        Trending in Technology
-                    </div>
-                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
-                        #OpenSource
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-secondary);">
-                        45.2K posts
-                    </div>
-                </div>
-                <button class="icon-button" style="margin-left: 8px;">
-                    <i class="fas fa-ellipsis-h"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Trending Item 2 -->
-        <div class="widget-item">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
-                        Technology · Trending
-                    </div>
-                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
-                        Artificial Intelligence
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-secondary);">
-                        127K posts
-                    </div>
-                </div>
-                <button class="icon-button" style="margin-left: 8px;">
-                    <i class="fas fa-ellipsis-h"></i>
-                </button>
-            </div>
-        </div>
-      
+        <!-- Show More Link -->
+        {% if trending_topics %}
+            <a href="{% url 'explore' %}" class="widget-item" style="color: var(--primary-color); cursor: pointer; text-decoration: none;">
+                Show more
+            </a>
+        {% endif %}
     </div>
 
     <!-- Who to Follow Widget -->

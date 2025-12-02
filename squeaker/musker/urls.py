@@ -17,4 +17,5 @@ urlpatterns = [
     path('logout/', views.logout_user, name='logout'),
     path('meep_like/<int:pk>', views.meep_like, name='meep_like'),
     path('explore/', views.explore, name='explore'),
+    path('hashtag/<str:hashtag_name>/', views.hashtag_view, name='hashtag'),
 ]

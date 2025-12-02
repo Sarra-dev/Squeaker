@@ -1,12 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Profile, Meep
-from .forms import MeepForm, ProfileEditForm , SignUpForm
+from .models import Hashtag, Profile, Meep
+from .forms import MeepForm, ProfileEditForm, SignUpForm
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
+from django.db.models import Count, Q
+from django.utils import timezone
+from datetime import timedelta
+from django.core.cache import cache  
 
 def home(request):
+    """Main home view - context processor handles trending/suggestions"""
     if request.user.is_authenticated:
         form = MeepForm(request.POST or None)
         if request.method == "POST":
@@ -14,21 +18,27 @@ def home(request):
                 meep = form.save(commit=False)
                 meep.user = request.user
                 meep.save()
-                messages.success(request, ("Your Squeak Has Been Posted"))
+                messages.success(request, "Your Squeak Has Been Posted")
                 return redirect('home')
+        
         meeps = Meep.objects.all().order_by("-created_at")
-        return render(request, 'home.html', {"meeps": meeps, "form": form})
+        return render(request, 'home.html', {
+            "meeps": meeps,
+            "form": form,
+        })
     else:
         meeps = Meep.objects.all().order_by("-created_at")
-        return render(request, 'home.html', {"meeps": meeps})
+        return render(request, 'home.html', {
+            "meeps": meeps,
+        })
+
 
 @login_required
 def profile_list(request):
+    """Profile list view - context processor handles sidebar"""
     if request.user.is_authenticated:
-        # Get all profiles except the current user
         profiles = Profile.objects.exclude(user=request.user)
         
-        # Handle follow/unfollow POST request
         if request.method == "POST":
             profile_id = request.POST.get('profile_id')
             action = request.POST.get('follow')
@@ -43,13 +53,15 @@ def profile_list(request):
                 
                 request.user.profile.save()
             
-            # Redirect back to profile_list to prevent form resubmission
             return redirect('profile_list')
         
         return render(request, 'profile_list.html', {"profiles": profiles})
     else:
         return redirect('home')
+
+
 def profile(request, pk):
+    """Profile view - context processor handles sidebar"""
     if not request.user.is_authenticated:
         messages.error(request, "You must be logged in to view profiles")
         return redirect('home')
@@ -71,8 +83,10 @@ def profile(request, pk):
     
     return render(request, "profile.html", {"profile": profile, "meeps": meeps})
 
+
 @login_required
 def edit_profile(request):
+    """Edit profile view - context processor handles sidebar"""
     profile = request.user.profile
     
     if request.method == "POST":
@@ -86,7 +100,9 @@ def edit_profile(request):
     
     return render(request, 'editProfile.html', {'form': form, 'profile': profile})
 
+
 def login_user(request):
+    """Login view"""
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
@@ -100,7 +116,9 @@ def login_user(request):
             return render(request, 'login.html')
     return render(request, 'login.html')
 
+
 def register_user(request):
+    """Registration view"""
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
@@ -112,16 +130,20 @@ def register_user(request):
             messages.success(request, 'Account created successfully!')
             return redirect('home')
     else:
-        form = SignUpForm()  # create empty form for GET requests
+        form = SignUpForm()
 
     return render(request, 'register.html', {'form': form})
 
+
 def logout_user(request):
+    """Logout view"""
     logout(request)
     messages.success(request, 'You have been logged out')
     return redirect('login')
 
+
 def meep_like(request, pk):
+    """Like/unlike a meep"""
     if request.user.is_authenticated:
         meep = get_object_or_404(Meep, id=pk)
         if meep.likes.filter(id=request.user.id):
@@ -130,10 +152,29 @@ def meep_like(request, pk):
             meep.likes.add(request.user)
 
         return redirect(request.META.get("HTTP_REFERER"))
-    
     else:
         messages.success(request, 'You Must Be Logged In To View That Page ...')
         return redirect('home')
+
+
 def explore(request):
+    """Explore view - context processor handles sidebar"""
     meeps = Meep.objects.all().order_by("-created_at")
     return render(request, 'explore.html', {"meeps": meeps})
+
+
+def hashtag_view(request, hashtag_name):
+    """View posts for a specific hashtag - context processor handles sidebar"""
+    try:
+        hashtag = Hashtag.objects.get(name=hashtag_name.lower())
+        posts = Meep.objects.filter(
+            meephashtag__hashtag=hashtag
+        ).order_by('-created_at')
+        
+        context = {
+            'hashtag': hashtag,
+            'posts': posts,
+        }
+        return render(request, 'hashtag.html', context)
+    except Hashtag.DoesNotExist:
+        return render(request, 'hashtag.html', {'hashtag': None, 'posts': []})
