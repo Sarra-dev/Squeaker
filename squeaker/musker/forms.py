@@ -7,13 +7,22 @@ from django.contrib.auth.models import User
 class MeepForm(forms.ModelForm):
     body = forms.CharField(
         required=True,
-        widget=forms.widgets.Textarea(
-            attrs={
-                "placeholder": "Enter Your Squeaker Squeak!",
-                "class": "form-control",
-            }
-        ),
-        label="",
+        widget=forms.Textarea(attrs={
+            "placeholder": "What's happening?",
+            "class": "post-textarea",
+            "rows": 3,
+            "maxlength": 200,
+        }),
+        label=""
+    )
+
+    image = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            "id": "image-upload",
+            "accept": "image/*",
+            "style": "display:none;"
+        })
     )
 
     class Meta:
