@@ -5,144 +5,273 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Squeaker</title>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/share-menu.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/compact-posts.css' %}">
 </head>
+
 <body>
-    <div class="main-container">
-        <!-- Include Sidebar Navigation -->
-        {% include 'navbar.html' %}
+<div class="main-container">
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Content Header -->
-            <div class="content-header">
-                <div class="header-content">
-                    <div class="header-title">
-                        <div class="header-name">Home</div>
-                    </div>
+    {% include 'navbar.html' %}
+
+    <div class="main-content">
+
+        <!-- HEADER -->
+        <div class="content-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <div class="header-name">Home</div>
                 </div>
             </div>
-
-            <!-- Post Form (if user is authenticated) -->
-            {% if form %}
-            <div class="post-form-container">
-                <div class="post-form-header">
-                    {% if request.user.is_authenticated and request.user.profile and request.user.profile.profile_image %}
-                        <img src="{{ request.user.profile.profile_image.url }}" alt="{{ request.user.username }}" class="post-form-avatar">
-                    {% else %}
-                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="Default Avatar" class="post-form-avatar">
-                    {% endif %}
-                    <form method="POST" class="post-form">
-                        {% csrf_token %}
-                        <textarea 
-                            name="{{ form.body.name }}" 
-                            placeholder="What's happening?" 
-                            class="post-textarea"
-                            maxlength="200"
-                            rows="3"
-                        >{{ form.body.value|default:'' }}</textarea>
-                        <div class="post-form-actions">
-                            <div class="post-form-icons">
-                                <button type="button" class="icon-btn" title="Media">
-                                    <i class="far fa-image"></i>
-                                </button>
-                                <button type="button" class="icon-btn" title="GIF">
-                                    <i class="fas fa-file-image"></i>
-                                </button>
-                                <button type="button" class="icon-btn" title="Poll">
-                                    <i class="fas fa-list"></i>
-                                </button>
-                                <button type="button" class="icon-btn" title="Emoji">
-                                    <i class="far fa-smile"></i>
-                                </button>
-                                <button type="button" class="icon-btn" title="Schedule">
-                                    <i class="far fa-calendar"></i>
-                                </button>
-                            </div>
-                            <button type="submit" class="btn-post">Post</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Posts Feed -->
-            {% if meeps %}
-                {% for meep in meeps %}
-                    <div class="post-card">
-                        <div class="post-header">
-                            <a href="{% url 'profile' meep.user.pk %}">
-                                {% if meep.user.profile and meep.user.profile.profile_image %}
-                                    <img src="{{ meep.user.profile.profile_image.url }}" alt="{{ meep.user.username }}" class="post-avatar">
-                                {% else %}
-                                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ meep.user.username }}" class="post-avatar">
-                                {% endif %}
-                            </a>
-                            <div class="post-content">
-                                <div class="post-user-info">
-                                    <a href="{% url 'profile' meep.user.pk %}" style="text-decoration: none;">
-                                        <span class="post-username">{{ meep.user.username }}</span>
-                                    </a>
-                                    {% if meep.user.is_staff %}
-                                        <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
-                                    {% endif %}
-                                    <span class="post-handle">@{{ meep.user.username }}</span>
-                                    <span class="post-date">{{ meep.created_at|timesince }}</span>
-                                </div>
-                                <div class="post-body">{{ meep.body }}</div>
-                                <div class="post-actions">
-                                    <a href="{% url 'meep_show' pk=meep.id %}" class="action-button" style="text-decoration: none;">
-                                        <i class="far fa-comment"></i>
-                                        <span>{{ meep.comments.count }}</span>
-                                    </a>
-                                    <button class="action-button">
-                                        <i class="fas fa-retweet"></i>
-                                        <span>0</span>
-                                    </button>
-                                    {% if user in meep.likes.all %}
-                                        <!-- If user already liked the post -->
-                                        <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="action-button like liked">
-                                                <i class="fas fa-heart"></i>
-                                                <span>{{ meep.number_of_likes }}</span>
-                                            </button>
-                                        </form>
-                                    {% else %}
-                                        <!-- If user has not liked the post -->
-                                        <form method="post" action="{% url 'meep_like' meep.id %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="action-button like">
-                                                <i class="far fa-heart"></i>
-                                                <span>{{ meep.number_of_likes }}</span>
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                    
-                                    <button class="action-button">
-                                        <i class="fas fa-chart-simple"></i>
-                                        <span>0</span>
-                                    </button>
-                                    <a href="{% url 'meep_show' pk=meep.id %}" class="action-button" style="text-decoration: none; color: inherit;">
-                                        <i class="fas fa-arrow-up-from-bracket"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state">
-                    <i class="far fa-comment"></i>
-                    <h3>No posts yet</h3>
-                    <p>When people post, they'll show up here.</p>
-                </div>
-            {% endif %}
         </div>
 
-        <!-- Include Right Sidebar -->
-        {% include 'trending.html' %}
+        <!-- POST FORM -->
+        {% if form %}
+        <div class="post-form-container">
+            <div class="post-form-header">
+
+                {% if request.user.profile.profile_image %}
+                    <img src="{{ request.user.profile.profile_image.url }}" class="post-form-avatar">
+                {% else %}
+                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"
+                         class="post-form-avatar">
+                {% endif %}
+
+                <form method="POST" enctype="multipart/form-data" class="post-form">
+                    {% csrf_token %}
+
+                    <!-- TEXT -->
+                    <textarea name="{{ form.body.name }}"
+                              placeholder="What's happening?"
+                              class="post-textarea"
+                              maxlength="200"
+                              rows="3">{{ form.body.value|default:'' }}</textarea>
+
+                    <!-- IMAGE INPUT (hidden) -->
+                    {{ form.image }}
+
+                    <!-- PREVIEW CONTAINER -->
+                    <div id="preview-container" style="display:none; position:relative; margin-top:10px;">
+                        <img id="preview-img"
+                             src="#"
+                             style="max-width:100%; border-radius:12px;">
+                        
+                        <!-- Remove button -->
+                        <button type="button" 
+                                onclick="removePreviewImage()" 
+                                style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.7); color:white; border:none; border-radius:50%; width:32px; height:32px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- ACTIONS -->
+                    <div class="post-form-actions">
+                        <div class="post-form-icons">
+                            <button type="button" class="icon-btn" title="Photos"
+                                    onclick="document.querySelector('input[name={{ form.image.name }}]').click();">
+                                <i class="far fa-image"></i>
+                            </button>
+
+                            <button type="button" class="icon-btn" title="GIF">
+                                <i class="fas fa-file-image"></i>
+                            </button>
+
+                            <button type="button" class="icon-btn" title="Poll">
+                                <i class="fas fa-list"></i>
+                            </button>
+
+                            <button type="button" class="icon-btn" title="Emoji">
+                                <i class="far fa-smile"></i>
+                            </button>
+
+                            <button type="button" class="icon-btn" title="Schedule">
+                                <i class="far fa-calendar"></i>
+                            </button>
+                        </div>
+
+                        <button type="submit" class="btn-post">Post</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- POSTS -->
+        {% if meeps %}
+            {% for meep in meeps %}
+            <div class="post-card">
+                <div class="post-header">
+
+                    <a href="{% url 'profile' meep.user.pk %}">
+                        {% if meep.user.profile.profile_image %}
+                            <img src="{{ meep.user.profile.profile_image.url }}" class="post-avatar">
+                        {% else %}
+                            <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png"
+                                 class="post-avatar">
+                        {% endif %}
+                    </a>
+
+                    <div class="post-content">
+
+                        <!-- USER INFO -->
+                        <div class="post-user-info">
+                            <a href="{% url 'profile' meep.user.pk %}" class="post-username">
+                                {{ meep.user.username }}
+                            </a>
+
+                            {% if meep.user.is_staff %}
+                                <i class="fas fa-check-circle"
+                                   style="color:var(--primary-color); font-size:14px;"></i>
+                            {% endif %}
+
+                            <span class="post-handle">@{{ meep.user.username }}</span>
+                            <span class="post-date">{{ meep.created_at|timesince }}</span>
+                        </div>
+
+                        <!-- TEXT -->
+                        <div class="post-body">{{ meep.body }}</div>
+
+                        <!-- IMAGE -->
+                        {% if meep.image %}
+                            <img src="{{ meep.image.url }}"
+                                 style="max-width:100%; border-radius:12px; margin-top:10px;">
+                        {% endif %}
+
+                        <!-- ACTION BUTTONS -->
+                        <div class="post-actions">
+
+                            <!-- COMMENTS -->
+                            <a href="{% url 'meep_show' pk=meep.id %}" class="action-button">
+                                <i class="far fa-comment"></i>
+                                <span>{{ meep.comments.count }}</span>
+                            </a>
+
+                            <!-- RETWEET -->
+                            <button class="action-button">
+                                <i class="fas fa-retweet"></i>
+                                <span>0</span>
+                            </button>
+
+                            <!-- LIKE -->
+                            {% if user in meep.likes.all %}
+                                <form method="post" action="{% url 'meep_like' meep.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-button like liked">
+                                        <i class="fas fa-heart"></i>
+                                        <span>{{ meep.number_of_likes }}</span>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'meep_like' meep.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-button like">
+                                        <i class="far fa-heart"></i>
+                                        <span>{{ meep.number_of_likes }}</span>
+                                    </button>
+                                </form>
+                            {% endif %}
+
+                            <!-- VIEWS -->
+                            <button class="action-button">
+                                <i class="fas fa-chart-simple"></i>
+                                <span>0</span>
+                            </button>
+
+                            <!-- SHARE MENU -->
+                            <div class="share-wrapper">
+                                <a href="#" class="action-button"
+                                   onclick="toggleShareMenu(event, '{{ meep.id }}')">
+                                    <i class="fas fa-arrow-up-from-bracket"></i>
+                                </a>
+
+                                <div class="share-popup" id="share-menu-{{ meep.id }}" style="display:none;">
+
+                                    <!-- Copy Link -->
+                                    <div class="share-option"
+                                         onclick="copyLink(event, '{{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}')">
+                                        <i class="fas fa-link"></i> Copy link
+                                    </div>
+
+                                    <!-- WhatsApp -->
+                                    <div class="share-option"
+                                         onclick="window.open('https://wa.me/?text={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
+                                        <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                                    </div>
+
+                                    <!-- Facebook -->
+                                    <div class="share-option"
+                                         onclick="window.open('https://www.facebook.com/sharer/sharer.php?u={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
+                                        <i class="fab fa-facebook"></i> Share on Facebook
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="far fa-comment"></i>
+                <h3>No posts yet</h3>
+                <p>When people post, they'll appear here.</p>
+            </div>
+        {% endif %}
+
     </div>
+
+    {% include 'trending.html' %}
+</div>
+
+<script src="{% static 'assets/js/share-menu.js' %}"></script>
+<script>
+// Image preview functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.querySelector('input[type="file"]');
+    const previewImg = document.getElementById('preview-img');
+    const previewContainer = document.getElementById('preview-container');
+    
+    if (imageInput && previewImg && previewContainer) {
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            
+            if (file) {
+                // Check if the file is an image
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        previewContainer.style.display = 'block';
+                    };
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Please select an image file');
+                    imageInput.value = '';
+                }
+            }
+        });
+    }
+});
+
+// Remove image preview
+function removePreviewImage() {
+    const imageInput = document.querySelector('input[type="file"]');
+    const previewImg = document.getElementById('preview-img');
+    const previewContainer = document.getElementById('preview-container');
+    
+    if (imageInput) imageInput.value = '';
+    if (previewImg) previewImg.src = '#';
+    if (previewContainer) previewContainer.style.display = 'none';
+}
+</script>
 </body>
 </html>
