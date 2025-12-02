@@ -19,5 +19,6 @@ urlpatterns = [
     path('explore/', views.explore, name='explore'),
     path('meep_show/<int:pk>', views.meep_show, name='meep_show'),
     path('meep/<int:meep_id>/comment/', views.meep_comment, name='meep_comment'),
+    path('hashtag/<str:hashtag_name>/', views.hashtag_view, name='hashtag'),
 
 ]

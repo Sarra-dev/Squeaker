@@ -159,18 +159,67 @@ def meep_like(request, pk):
         return redirect('home')
 
 
-def explore(request):
-    """Explore view - context processor handles sidebar"""
-    meeps = Meep.objects.all().order_by("-created_at")
-    return render(request, 'explore.html', {"meeps": meeps})
 
-def meep_show(request, pk):
-    meep = get_object_or_404(Meep, id=pk)
-    if meep:
-        return render(request, 'show_meep.html', {"meep": meep})
+
+
+def explore(request):
+    """
+    Explore view with search functionality for meeps, hashtags, and people
+    """
+    query = request.GET.get('q', '').strip()
+    search_type = request.GET.get('type', 'meeps')  # 'meeps', 'hashtags', or 'people'
+    
+    meeps = []
+    hashtags = []
+    people = []
+    
+    if query:
+        # Search meeps
+        if search_type == 'meeps':
+            meeps = Meep.objects.filter(
+                Q(body__icontains=query) | Q(user__username__icontains=query)
+            ).select_related('user', 'user__profile').order_by('-created_at')[:50]
+        
+        # Search hashtags
+        elif search_type == 'hashtags':
+            hashtags = Hashtag.objects.filter(
+                name__icontains=query
+            ).annotate(
+                meep_count=Count('meephashtag')
+            ).order_by('-meep_count')[:20]
+        
+        # Search people
+        elif search_type == 'people':
+            people = Profile.objects.filter(
+                Q(user__username__icontains=query) |
+                Q(user__first_name__icontains=query) |
+                Q(user__last_name__icontains=query) |
+                Q(bio__icontains=query)
+            ).select_related('user').order_by('-date_created')[:20]
     else:
-        messages.success(request, 'That Squeak does not exist..')
-        return redirect('home')
+        # Show all meeps when no search query
+        meeps = Meep.objects.all().select_related('user', 'user__profile').order_by('-created_at')[:50]
+    
+    # Get trending hashtags for explore page
+    time_threshold = timezone.now() - timedelta(days=7)
+    trending_hashtags = Hashtag.objects.filter(
+        meephashtag__meep__created_at__gte=time_threshold
+    ).annotate(
+        meep_count=Count('meephashtag')
+    ).filter(
+        meep_count__gte=2
+    ).order_by('-meep_count')[:10]
+    
+    context = {
+        'meeps': meeps,
+        'hashtags': hashtags,
+        'people': people,
+        'trending_hashtags': trending_hashtags,
+        'query': query,
+        'search_type': search_type,
+    }
+    
+    return render(request, 'explore.html', context)
     
 @login_required
 def meep_comment(request, meep_id):

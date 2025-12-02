@@ -24,185 +24,207 @@
                 </div>
             </div>
 
-            <!-- Search Bar -->
-            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); background-color: var(--bg-primary);">
-                <div style="position: relative;">
-                    <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;"></i>
-                    <input 
-                        type="search" 
-                        placeholder="Search Squeaker" 
-                        style="width: 100%; padding: 12px 16px 12px 48px; border-radius: 30px; border: 1px solid var(--border-color); background: var(--bg-secondary); font-size: 15px; color: var(--text-primary); outline: none; transition: all 0.2s ease;"
-                        onfocus="this.style.borderColor='var(--primary-color)'; this.style.background='var(--bg-primary)'"
-                        onblur="this.style.borderColor='var(--border-color)'; this.style.background='var(--bg-secondary)'"
-                    >
-                </div>
+            <!-- Search Bar with Functionality -->
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); background-color: var(--bg-primary); position: sticky; top: 53px; z-index: 9;">
+                <form method="GET" action="{% url 'explore' %}">
+                    <div style="position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;"></i>
+                        <input 
+                            type="search"
+                            name="q"
+                            value="{{ query }}"
+                            placeholder="Search Squeaker" 
+                            style="width: 100%; padding: 12px 16px 12px 48px; border-radius: 30px; border: 1px solid var(--border-color); background: var(--bg-secondary); font-size: 15px; color: var(--text-primary); outline: none; transition: all 0.2s ease;"
+                            onfocus="this.style.borderColor='var(--primary-color)'; this.style.background='var(--bg-primary)'"
+                            onblur="this.style.borderColor='var(--border-color)'; this.style.background='var(--bg-secondary)'"
+                        >
+                        {% if query %}
+                        <button type="button" onclick="clearSearch()" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: var(--primary-color); border: none; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 12px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
             </div>
 
-            <!-- Explore Tabs -->
+            <!-- Search Type Tabs (only show when searching) -->
+            {% if query %}
             <div class="profile-tabs">
-                <button class="tab-item active">For you</button>
-                <button class="tab-item">Trending</button>
-                <button class="tab-item">News</button>
-                <button class="tab-item">Sports</button>
-                <button class="tab-item">Entertainment</button>
+                <a href="?q={{ query }}&type=meeps" class="tab-item {% if search_type == 'meeps' %}active{% endif %}">Meeps</a>
+                <a href="?q={{ query }}&type=hashtags" class="tab-item {% if search_type == 'hashtags' %}active{% endif %}">Hashtags</a>
+                <a href="?q={{ query }}&type=people" class="tab-item {% if search_type == 'people' %}active{% endif %}">People</a>
             </div>
+            {% else %}
+            <!-- Explore Tabs (when not searching) -->
+            <div class="profile-tabs">
+                <button class="tab-item active" data-tab="foryou">For you</button>
+                <button class="tab-item" data-tab="trending">Trending</button>
+                <button class="tab-item" data-tab="news">News</button>
+                <button class="tab-item" data-tab="sports">Sports</button>
+                <button class="tab-item" data-tab="entertainment">Entertainment</button>
+            </div>
+            {% endif %}
 
-            <!-- Posts Feed -->
-            {% if posts %}
-                {% for post in posts %}
-                    <div class="post-card">
-                        <div class="post-header">
-                            <a href="{% url 'profile' post.user.pk %}">
-                                {% if post.user.profile.profile_image %}
-                                    <img src="{{ post.user.profile.profile_image.url }}" alt="{{ post.user.username }}" class="post-avatar">
+            <!-- Content Area -->
+            {% if query %}
+                <!-- SEARCH RESULTS -->
+                
+                <!-- Meeps Search Results -->
+                {% if search_type == 'meeps' %}
+                    {% if meeps %}
+                        {% for post in meeps %}
+                        <div class="post-card">
+                            <div class="post-header">
+                                <a href="{% url 'profile' post.user.pk %}">
+                                    {% if post.user.profile.profile_image %}
+                                        <img src="{{ post.user.profile.profile_image.url }}" alt="{{ post.user.username }}" class="post-avatar">
+                                    {% else %}
+                                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ post.user.username }}" class="post-avatar">
+                                    {% endif %}
+                                </a>
+                                <div class="post-content">
+                                    <div class="post-user-info">
+                                        <a href="{% url 'profile' post.user.pk %}" style="text-decoration: none;">
+                                            <span class="post-username">{{ post.user.get_full_name|default:post.user.username }}</span>
+                                        </a>
+                                        {% if post.user.is_staff %}
+                                            <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
+                                        {% endif %}
+                                        <span class="post-handle">@{{ post.user.username }}</span>
+                                        <span class="post-date">{{ post.created_at|timesince }} ago</span>
+                                    </div>
+                                    <div class="post-body">{{ post.body }}</div>
+                                    <div class="post-actions">
+                                        <button class="action-button">
+                                            <i class="far fa-comment"></i>
+                                            <span>0</span>
+                                        </button>
+                                        <button class="action-button">
+                                            <i class="fas fa-retweet"></i>
+                                            <span>0</span>
+                                        </button>
+                                        <form method="POST" action="{% url 'meep_like' post.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-button like" style="background: none; border: none; cursor: pointer;">
+                                                {% if request.user in post.likes.all %}
+                                                    <i class="fas fa-heart" style="color: #f91880;"></i>
+                                                {% else %}
+                                                    <i class="far fa-heart"></i>
+                                                {% endif %}
+                                                <span>{{ post.number_of_likes }}</span>
+                                            </button>
+                                        </form>
+                                        <button class="action-button">
+                                            <i class="fas fa-chart-simple"></i>
+                                            <span>0</span>
+                                        </button>
+                                        <button class="action-button">
+                                            <i class="fas fa-arrow-up-from-bracket"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <h3>No meeps found</h3>
+                            <p>Try searching for something else</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Hashtags Search Results -->
+                {% if search_type == 'hashtags' %}
+                    {% if hashtags %}
+                        {% for hashtag in hashtags %}
+                        <a href="{% url 'hashtag' hashtag.name %}" class="hashtag-result-item">
+                            <div class="hashtag-icon-wrapper">
+                                <i class="fas fa-hashtag"></i>
+                            </div>
+                            <div class="hashtag-details">
+                                <div class="hashtag-name">#{{ hashtag.name }}</div>
+                                <div class="hashtag-count">{{ hashtag.meep_count }} meep{{ hashtag.meep_count|pluralize }}</div>
+                            </div>
+                            <i class="fas fa-arrow-right" style="color: var(--text-secondary); margin-left: auto;"></i>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-hashtag"></i>
+                            <h3>No hashtags found</h3>
+                            <p>Try searching for something else</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- People Search Results -->
+                {% if search_type == 'people' %}
+                    {% if people %}
+                        {% for profile in people %}
+                        <div class="suggestion-card">
+                            <a href="{% url 'profile' profile.user.id %}" class="profile-link">
+                                {% if profile.profile_image %}
+                                    <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
                                 {% else %}
-                                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ post.user.username }}" class="post-avatar">
+                                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
                                 {% endif %}
                             </a>
-                            <div class="post-content">
-                                <div class="post-user-info">
-                                    <a href="{% url 'profile' post.user.pk %}" style="text-decoration: none;">
-                                        <span class="post-username">{{ post.user.get_full_name|default:post.user.username }}</span>
-                                    </a>
-                                    {% if post.user.is_staff %}
-                                        <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
-                                    {% endif %}
-                                    <span class="post-handle">@{{ post.user.username }}</span>
-                                    <span class="post-date">{{ post.created_at|timesince }}</span>
-                                </div>
-                                <div class="post-body">{{ post.body }}</div>
-                                <div class="post-actions">
-                                    <button class="action-button">
-                                        <i class="far fa-comment"></i>
-                                        <span>{{ post.replies_count|default:0 }}</span>
-                                    </button>
-                                    <button class="action-button">
-                                        <i class="fas fa-retweet"></i>
-                                        <span>{{ post.retweets_count|default:0 }}</span>
-                                    </button>
-                                    <button class="action-button like">
-                                        <i class="far fa-heart"></i>
-                                        <span>{{ post.likes_count|default:0 }}</span>
-                                    </button>
-                                    <button class="action-button">
-                                        <i class="fas fa-chart-simple"></i>
-                                        <span>0</span>
-                                    </button>
-                                    <button class="action-button">
-                                        <i class="fas fa-arrow-up-from-bracket"></i>
-                                    </button>
-                                </div>
+                            <div class="suggestion-card-info">
+                                <a href="{% url 'profile' profile.user.id %}" style="text-decoration: none;">
+                                    <div class="suggestion-card-name">
+                                        {{ profile.user.get_full_name|default:profile.user.username }}
+                                        {% if profile.user.is_staff %}
+                                            <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="suggestion-card-username">@{{ profile.user.username|lower }}</div>
+                                </a>
+                                {% if profile.bio %}
+                                    <div class="suggestion-card-bio">{{ profile.bio|truncatewords:15 }}</div>
+                                {% endif %}
                             </div>
+                            {% if request.user.is_authenticated and request.user != profile.user %}
+                            <form method="POST" action="{% url 'profile' profile.user.id %}" style="margin-left: auto;">
+                                {% csrf_token %}
+                                {% if request.user.profile in profile.followed_by.all %}
+                                    <button type="submit" name="follow" value="unfollow" class="btn-following-small">Following</button>
+                                {% else %}
+                                    <button type="submit" name="follow" value="follow" class="follow-btn-small">Follow</button>
+                                {% endif %}
+                            </form>
+                            {% endif %}
                         </div>
-                    </div>
-                {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user"></i>
+                            <h3>No people found</h3>
+                            <p>Try searching for something else</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
             {% else %}
-                <!-- Example Placeholder Posts -->
-                <div class="post-card">
-                    <div class="post-header">
-                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="Squeaker" class="post-avatar">
-                        <div class="post-content">
-                            <div class="post-user-info">
-                                <span class="post-username">Squeaker</span>
-                                <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
-                                <span class="post-handle">@squeaker</span>
-                                <span class="post-date">2h</span>
-                            </div>
-                            <div class="post-body">Welcome to Explore — discover what's happening right now on Squeaker. Follow topics, creators, and join the conversation.</div>
-                            <div class="post-actions">
-                                <button class="action-button">
-                                    <i class="far fa-comment"></i>
-                                    <span>12</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-retweet"></i>
-                                    <span>34</span>
-                                </button>
-                                <button class="action-button like">
-                                    <i class="far fa-heart"></i>
-                                    <span>156</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-chart-simple"></i>
-                                    <span>2.1K</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-arrow-up-from-bracket"></i>
-                                </button>
-                            </div>
-                        </div>
+                <!-- NO SEARCH - Show Regular Feed with Trending -->
+                
+                <!-- Trending Hashtags Section -->
+                {% if trending_hashtags %}
+                <div style="padding: 20px 16px; border-bottom: 1px solid var(--border-color);">
+                    <h2 style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-bottom: 16px;">🔥 Trending Now</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+                        {% for hashtag in trending_hashtags %}
+                        <a href="{% url 'hashtag' hashtag.name %}" style="text-decoration: none; background: var(--bg-secondary); padding: 16px; border-radius: 12px; transition: all 0.2s; border: 1px solid transparent;" onmouseover="this.style.background='var(--hover-bg)'; this.style.borderColor='var(--border-color)'" onmouseout="this.style.background='var(--bg-secondary)'; this.style.borderColor='transparent'">
+                            <div style="font-size: 24px; font-weight: 800; color: var(--primary-color); margin-bottom: 8px;">#{{ forloop.counter }}</div>
+                            <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">#{{ hashtag.name }}</div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">{{ hashtag.meep_count }} meep{{ hashtag.meep_count|pluralize }}</div>
+                        </a>
+                        {% endfor %}
                     </div>
                 </div>
+                {% endif %}
 
-                <div class="post-card">
-                    <div class="post-header">
-                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="Product" class="post-avatar">
-                        <div class="post-content">
-                            <div class="post-user-info">
-                                <span class="post-username">Squeaker Product</span>
-                                <span class="post-handle">@squeaker_prod</span>
-                                <span class="post-date">5h</span>
-                            </div>
-                            <div class="post-body">New: Explore page is now live! We're iterating quickly — send us your feedback! 🚀</div>
-                            <div class="post-actions">
-                                <button class="action-button">
-                                    <i class="far fa-comment"></i>
-                                    <span>5</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-retweet"></i>
-                                    <span>18</span>
-                                </button>
-                                <button class="action-button like">
-                                    <i class="far fa-heart"></i>
-                                    <span>89</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-chart-simple"></i>
-                                    <span>1.2K</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-arrow-up-from-bracket"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="post-card">
-                    <div class="post-header">
-                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="Tech News" class="post-avatar">
-                        <div class="post-content">
-                            <div class="post-user-info">
-                                <span class="post-username">Tech Daily</span>
-                                <span class="post-handle">@techdaily</span>
-                                <span class="post-date">8h</span>
-                            </div>
-                            <div class="post-body">Breaking: Major developments in AI technology. The future is here! #AI #Technology #Innovation</div>
-                            <div class="post-actions">
-                                <button class="action-button">
-                                    <i class="far fa-comment"></i>
-                                    <span>45</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-retweet"></i>
-                                    <span>203</span>
-                                </button>
-                                <button class="action-button like">
-                                    <i class="far fa-heart"></i>
-                                    <span>567</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-chart-simple"></i>
-                                    <span>12.5K</span>
-                                </button>
-                                <button class="action-button">
-                                    <i class="fas fa-arrow-up-from-bracket"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             {% endif %}
         </div>
 
@@ -210,16 +232,102 @@
         {% include 'trending.html' %}
     </div>
 
+    <style>
+    /* Hashtag Result Items */
+    .hashtag-result-item {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        gap: 12px;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .hashtag-result-item:hover {
+        background-color: var(--hover-bg);
+    }
+
+    .hashtag-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--bg-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--primary-color);
+    }
+
+    .hashtag-details {
+        flex: 1;
+    }
+
+    .hashtag-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .hashtag-count {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 20px;
+        text-align: center;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+        font-size: 31px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        font-size: 15px;
+        color: var(--text-secondary);
+    }
+
+    /* Tab Items Link Style */
+    .tab-item {
+        text-decoration: none;
+        color: var(--text-secondary);
+    }
+
+    .tab-item.active {
+        color: var(--text-primary);
+    }
+    </style>
+
     <script>
-        // Tab switching functionality
-        document.querySelectorAll('.tab-item').forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Remove active class from all tabs
-                document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-                // Add active class to clicked tab
-                this.classList.add('active');
-            });
+    function clearSearch() {
+        window.location.href = '{% url "explore" %}';
+    }
+
+    // Tab switching functionality for trending tabs (when not searching)
+    document.querySelectorAll('[data-tab]').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
         });
+    });
     </script>
 </body>
 </html>
