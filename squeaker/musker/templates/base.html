@@ -30,5 +30,51 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <!-- Toast container for transient popups -->
+    <div aria-live="polite" aria-atomic="true" class="position-fixed" style="bottom: 1rem; right: 1rem; z-index: 1080;">
+      <div id="toast-wrapper"></div>
+    </div>
+
+    <script>
+      // Convert existing alerts (Django messages) into Bootstrap toasts for a nicer popup.
+      (function () {
+        try {
+          const alerts = document.querySelectorAll('.alert');
+          const wrapper = document.getElementById('toast-wrapper');
+          if (!wrapper) return;
+
+          alerts.forEach(function (alertEl) {
+            const text = alertEl.textContent.trim();
+
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-bg-light border-0';
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.style.minWidth = '200px';
+
+            toast.innerHTML = `
+              <div class="d-flex">
+                <div class="toast-body">${text}</div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              </div>
+            `;
+
+            wrapper.appendChild(toast);
+
+            // Initialize and show toast (auto hide after 2500ms)
+            const bsToast = new bootstrap.Toast(toast, { delay: 2500 });
+            bsToast.show();
+
+            // Remove original alert from DOM
+            alertEl.remove();
+          });
+        } catch (e) {
+          // If anything fails, silently ignore to avoid breaking pages
+          console.error(e);
+        }
+      })();
+    </script>
   </body>
 </html>

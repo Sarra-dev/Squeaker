@@ -205,7 +205,10 @@
       {% endif %}
       {% if messages %}
         {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} w-100">{{ message }}</div>
+          {# Only show error/danger messages on the login page (avoid showing unrelated success toasts here) #}
+          {% if 'error' in message.tags or 'danger' in message.tags %}
+            <div class="alert alert-{{ message.tags }} w-100">{{ message }}</div>
+          {% endif %}
         {% endfor %}
       {% endif %}
       

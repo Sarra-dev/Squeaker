@@ -18,4 +18,5 @@ urlpatterns = [
     path('meep_like/<int:pk>', views.meep_like, name='meep_like'),
     path('delete_meep/<int:pk>', views.delete_meep, name='delete_meeps'),
     path('meep_show/<int:pk>', views.meep_show, name='meep_show'),
+    path('meep_share/<int:pk>', views.meep_share, name='meep_share'),
 ]
