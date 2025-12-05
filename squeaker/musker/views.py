@@ -1,6 +1,8 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Profile, Meep, Comment
+from .utils import create_notification
+from .models import Notification, Profile, Meep, Comment
 from .forms import MeepForm, ProfileEditForm , SignUpForm
 from .models import Hashtag, Profile, Meep
 from .forms import MeepForm, ProfileEditForm, SignUpForm
@@ -70,7 +72,7 @@ def profile_list(request):
 
 
 def profile(request, pk):
-    """Profile view - context processor handles sidebar"""
+    """Profile view with follow notifications"""
     if not request.user.is_authenticated:
         messages.error(request, "You must be logged in to view profiles")
         return redirect('home')
@@ -84,9 +86,21 @@ def profile(request, pk):
         if action == "unfollow":
             current_user_profile.follows.remove(profile)
             messages.success(request, f"You unfollowed {profile.user.username}")
+            # Optionally: Delete the follow notification
+            Notification.objects.filter(
+                recipient=profile.user,
+                sender=request.user,
+                notification_type='follow'
+            ).delete()
         elif action == "follow":
             current_user_profile.follows.add(profile)
             messages.success(request, f"You are now following {profile.user.username}")
+            # Create follow notification
+            create_notification(
+                recipient=profile.user,
+                sender=request.user,
+                notification_type='follow'
+            )
         current_user_profile.save()
         return redirect('profile', pk=pk)
     
@@ -152,13 +166,27 @@ def logout_user(request):
 
 
 def meep_like(request, pk):
-    """Like/unlike a meep"""
+    """Like/unlike a meep with notification"""
     if request.user.is_authenticated:
         meep = get_object_or_404(Meep, id=pk)
         if meep.likes.filter(id=request.user.id):
             meep.likes.remove(request.user)
+            # Remove like notification
+            Notification.objects.filter(
+                recipient=meep.user,
+                sender=request.user,
+                notification_type='like',
+                meep=meep
+            ).delete()
         else:
             meep.likes.add(request.user)
+            # Create like notification
+            create_notification(
+                recipient=meep.user,
+                sender=request.user,
+                notification_type='like',
+                meep=meep
+            )
 
         return redirect(request.META.get("HTTP_REFERER"))
     else:
@@ -166,6 +194,78 @@ def meep_like(request, pk):
         return redirect('home')
 
 
+@login_required
+def meep_comment(request, meep_id):
+    """Handle comment submission with notification"""
+    meep = get_object_or_404(Meep, id=meep_id)
+    
+    if request.method == 'POST':
+        comment_body = request.POST.get('comment_body', '').strip()
+        
+        if comment_body:
+            # Create the comment
+            comment = Comment.objects.create(
+                meep=meep,
+                user=request.user,
+                content=comment_body
+            )
+            # Create comment notification
+            create_notification(
+                recipient=meep.user,
+                sender=request.user,
+                notification_type='comment',
+                meep=meep,
+                comment=comment
+            )
+            messages.success(request, 'Comment posted successfully!')
+        else:
+            messages.error(request, 'Comment cannot be empty.')
+    
+    return redirect('meep_show', pk=meep_id)
+
+
+@login_required
+def notifications(request):
+    """Display user notifications"""
+    user_notifications = Notification.objects.filter(
+        recipient=request.user
+    ).select_related('sender', 'meep', 'comment')[:50]
+    
+    # Mark all as read when viewing
+    if request.method == 'POST' and request.POST.get('mark_all_read'):
+        Notification.objects.filter(
+            recipient=request.user,
+            is_read=False
+        ).update(is_read=True)
+        return redirect('notifications')
+    
+    context = {
+        'notifications': user_notifications,
+    }
+    return render(request, 'notifications.html', context)
+
+
+@login_required
+def mark_notification_read(request, notification_id):
+    """Mark a single notification as read"""
+    notification = get_object_or_404(
+        Notification, 
+        id=notification_id, 
+        recipient=request.user
+    )
+    notification.is_read = True
+    notification.save()
+    return redirect(notification.get_link())
+
+
+@login_required
+def get_unread_count(request):
+    """API endpoint to get unread notification count"""
+    count = Notification.objects.filter(
+        recipient=request.user,
+        is_read=False
+    ).count()
+    return JsonResponse({'count': count})
 
 
 
@@ -228,27 +328,6 @@ def explore(request):
     
     return render(request, 'explore.html', context)
     
-@login_required
-def meep_comment(request, meep_id):
-    """Handle comment submission for a meep"""
-    meep = get_object_or_404(Meep, id=meep_id)
-    
-    if request.method == 'POST':
-        comment_body = request.POST.get('comment_body', '').strip()
-        
-        if comment_body:
-            # Create the comment
-            Comment.objects.create(
-                meep=meep,
-                user=request.user,
-                content=comment_body
-            )
-            messages.success(request, 'Comment posted successfully!')
-        else:
-            messages.error(request, 'Comment cannot be empty.')
-    
-    # Redirect back to the meep detail page
-    return redirect('meep_show', pk=meep_id)
 
 
 def meep_show(request, pk):

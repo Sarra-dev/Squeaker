@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Include Sidebar Navigation -->
+        {% include 'navbar.html' %}
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Content Header -->
+            <div class="content-header">
+                <div class="header-content">
+                    <button class="back-button" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="header-title">
+                        <div class="header-name">Notifications</div>
+                    </div>
+                </div>
+                {% if notifications %}
+                <form method="POST" style="margin-left: auto;">
+                    {% csrf_token %}
+                    <input type="hidden" name="mark_all_read" value="1">
+                    <button type="submit" class="follow-btn-small">Mark all as read</button>
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- Notifications List -->
+            {% if notifications %}
+                {% for notification in notifications %}
+                    <a href="{% url 'mark_notification_read' notification.id %}" 
+                       class="suggestion-card {% if not notification.is_read %}unread-notification{% endif %}" 
+                       style="text-decoration: none; color: inherit; cursor: pointer;">
+                        
+                        <div class="notification-icon-wrapper">
+                            {% if notification.notification_type == 'like' %}
+                                <i class="fas fa-heart notification-type-icon" style="color: #e0245e;"></i>
+                            {% elif notification.notification_type == 'comment' %}
+                                <i class="fas fa-comment notification-type-icon" style="color: #1da1f2;"></i>
+                            {% elif notification.notification_type == 'follow' %}
+                                <i class="fas fa-user-plus notification-type-icon" style="color: #17bf63;"></i>
+                            {% endif %}
+                        </div>
+
+                        {% if notification.sender.profile.profile_image %}
+                            <img src="{{ notification.sender.profile.profile_image.url }}" 
+                                 alt="{{ notification.sender.username }}" 
+                                 class="suggestion-card-avatar">
+                        {% else %}
+                            <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" 
+                                 alt="{{ notification.sender.username }}" 
+                                 class="suggestion-card-avatar">
+                        {% endif %}
+
+                        <div class="suggestion-card-info">
+                            <div class="suggestion-card-name">
+                                {{ notification.sender.username }}
+                                {% if notification.sender.is_staff %}
+                                    <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
+                                {% endif %}
+                            </div>
+                            <div class="suggestion-card-username">
+                                {% if notification.notification_type == 'like' %}
+                                    liked your meep
+                                {% elif notification.notification_type == 'comment' %}
+                                    commented on your meep
+                                {% elif notification.notification_type == 'follow' %}
+                                    started following you
+                                {% endif %}
+                            </div>
+                            
+                            {% if notification.meep %}
+                            <div class="notification-meep-preview">
+                                {{ notification.meep.body|truncatewords:15 }}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="suggestion-card-meta">
+                                <span><i class="far fa-clock"></i> {{ notification.created_at|timesince }} ago</span>
+                            </div>
+                        </div>
+                        
+                        {% if not notification.is_read %}
+                        <div class="unread-indicator"></div>
+                        {% endif %}
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash"></i>
+                    <h3>No notifications yet</h3>
+                    <p>When someone likes, comments, or follows you, you'll see it here.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Include Right Sidebar -->
+        {% include 'trending.html' %}
+    </div>
+
+    <style>
+        /* Notification specific styles */
+        .unread-notification {
+            background-color: #f0f8ff !important;
+            border-left: 3px solid #1da1f2;
+        }
+
+        .notification-icon-wrapper {
+            position: absolute;
+            left: 16px;
+            top: 16px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border-radius: 50%;
+        }
+
+        .notification-type-icon {
+            font-size: 16px;
+        }
+
+        .suggestion-card-avatar {
+            margin-left: 40px !important;
+        }
+
+        .notification-meep-preview {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background-color: #f7f9f9;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #536471;
+            border: 1px solid #eff3f4;
+        }
+
+        .unread-indicator {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background-color: #1da1f2;
+            border-radius: 50%;
+        }
+
+        .suggestion-card {
+            position: relative;
+            transition: background-color 0.2s;
+        }
+
+        .suggestion-card:hover {
+            background-color: #f7f9f9 !important;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            text-align: center;
+            color: #657786;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            color: #0f1419;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            margin: 0;
+            color: #657786;
+        }
+    </style>
+</body>
+</html>

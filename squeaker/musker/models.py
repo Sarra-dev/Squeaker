@@ -4,6 +4,7 @@ from time import timezone
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
+from django.urls import reverse
 
 class Meep(models.Model):
     user = models.ForeignKey(
@@ -143,3 +144,74 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} → {self.meep.id}"
+    
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('like', 'Like'),
+        ('comment', 'Comment'),
+        ('follow', 'Follow'),
+    )
+    
+    recipient = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='notifications'
+    )
+    sender = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='sent_notifications'
+    )
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    meep = models.ForeignKey(
+        'Meep', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        related_name='notifications'
+    )
+    comment = models.ForeignKey(
+        'Comment',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', '-created_at']),
+            models.Index(fields=['recipient', 'is_read']),
+        ]
+    
+    def __str__(self):
+        return f"{self.sender.username} {self.notification_type} - {self.recipient.username}"
+    
+    def get_message(self):
+        """Return a human-readable notification message"""
+        if self.notification_type == 'like':
+            return f"{self.sender.username} liked your meep"
+        elif self.notification_type == 'comment':
+            return f"{self.sender.username} commented on your meep"
+        elif self.notification_type == 'follow':
+            return f"{self.sender.username} started following you"
+        return "New notification"
+    
+    def get_link(self):
+        """
+        Returns where to go when user clicks the notification:
+        - Like/comment → go to meep_show/<id>
+        - Follow → go to sender profile
+        """
+
+        if self.meep:
+            return reverse("meep_show", args=[self.meep.id])
+
+        if self.notification_type == "follow":
+            return reverse("profile", args=[self.sender.id])
+
+        # fallback (safety)
+        return reverse("notifications")

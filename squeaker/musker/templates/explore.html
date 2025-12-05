@@ -57,11 +57,9 @@
             {% else %}
             <!-- Explore Tabs (when not searching) -->
             <div class="profile-tabs">
-                <button class="tab-item active" data-tab="foryou">For you</button>
+
                 <button class="tab-item" data-tab="trending">Trending</button>
-                <button class="tab-item" data-tab="news">News</button>
-                <button class="tab-item" data-tab="sports">Sports</button>
-                <button class="tab-item" data-tab="entertainment">Entertainment</button>
+                
             </div>
             {% endif %}
 
@@ -189,7 +187,7 @@
                             <form method="POST" action="{% url 'profile' profile.user.id %}" style="margin-left: auto;">
                                 {% csrf_token %}
                                 {% if request.user.profile in profile.followed_by.all %}
-                                    <button type="submit" name="follow" value="unfollow" class="btn-following-small">Following</button>
+                                    <button type="submit" name="follow" value="unfollow" class="btn-following-small"></button>
                                 {% else %}
                                     <button type="submit" name="follow" value="follow" class="follow-btn-small">Follow</button>
                                 {% endif %}

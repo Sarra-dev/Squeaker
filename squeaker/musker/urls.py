@@ -20,5 +20,8 @@ urlpatterns = [
     path('meep_show/<int:pk>', views.meep_show, name='meep_show'),
     path('meep/<int:meep_id>/comment/', views.meep_comment, name='meep_comment'),
     path('hashtag/<str:hashtag_name>/', views.hashtag_view, name='hashtag'),
-
+     path('notifications/', views.notifications, name='notifications'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/unread-count/', views.get_unread_count, name='unread_count'),
+    
 ]
