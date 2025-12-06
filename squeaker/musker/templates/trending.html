@@ -70,10 +70,7 @@
                                             <i class="far fa-comment"></i>
                                             <span>0</span>
                                         </button>
-                                        <button class="action-button">
-                                            <i class="fas fa-retweet"></i>
-                                            <span>0</span>
-                                        </button>
+                                       
                                         <form method="POST" action="{% url 'meep_like' post.id %}" style="display: inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="action-button like" style="background: none; border: none; cursor: pointer;">
@@ -85,10 +82,7 @@
                                                 <span>{{ post.number_of_likes }}</span>
                                             </button>
                                         </form>
-                                        <button class="action-button">
-                                            <i class="fas fa-chart-simple"></i>
-                                            <span>0</span>
-                                        </button>
+                                        
                                         <button class="action-button">
                                             <i class="fas fa-arrow-up-from-bracket"></i>
                                         </button>

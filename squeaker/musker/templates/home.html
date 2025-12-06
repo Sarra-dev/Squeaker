@@ -10,6 +10,74 @@
     <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
     <link rel="stylesheet" href="{% static 'assets/css/share-menu.css' %}">
     <link rel="stylesheet" href="{% static 'assets/css/compact-posts.css' %}">
+    
+    <style>
+        .emoji-picker-container {
+            position: absolute;
+            bottom: 60px;
+            left: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none;
+            max-width: 320px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .emoji-picker-container.show {
+            display: block;
+        }
+
+        .emoji-categories {
+            display: flex;
+            gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .emoji-category {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: var(--bg-secondary);
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .emoji-category.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+        }
+
+        .emoji-item {
+            padding: 8px;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s;
+            text-align: center;
+            border: none;
+            background: transparent;
+        }
+
+        .emoji-item:hover {
+            background: var(--hover-bg);
+        }
+    </style>
 </head>
 
 <body>
@@ -45,6 +113,7 @@
 
                     <!-- TEXT -->
                     <textarea name="{{ form.body.name }}"
+                              id="post-textarea"
                               placeholder="What's happening?"
                               class="post-textarea"
                               maxlength="200"
@@ -69,27 +138,30 @@
 
                     <!-- ACTIONS -->
                     <div class="post-form-actions">
-                        <div class="post-form-icons">
+                        <div class="post-form-icons" style="position: relative;">
                             <button type="button" class="icon-btn" title="Photos"
                                     onclick="document.querySelector('input[name={{ form.image.name }}]').click();">
                                 <i class="far fa-image"></i>
                             </button>
 
-                            <button type="button" class="icon-btn" title="GIF">
-                                <i class="fas fa-file-image"></i>
-                            </button>
-
-                            <button type="button" class="icon-btn" title="Poll">
-                                <i class="fas fa-list"></i>
-                            </button>
-
-                            <button type="button" class="icon-btn" title="Emoji">
+                            <button type="button" class="icon-btn" title="Emoji" onclick="toggleEmojiPicker()">
                                 <i class="far fa-smile"></i>
                             </button>
 
-                            <button type="button" class="icon-btn" title="Schedule">
-                                <i class="far fa-calendar"></i>
-                            </button>
+                            <!-- Emoji Picker -->
+                            <div id="emoji-picker" class="emoji-picker-container">
+                                <div class="emoji-categories">
+                                    <button class="emoji-category active" onclick="showEmojiCategory('smileys')">😊</button>
+                                    <button class="emoji-category" onclick="showEmojiCategory('animals')">🐶</button>
+                                    <button class="emoji-category" onclick="showEmojiCategory('food')">🍕</button>
+                                    <button class="emoji-category" onclick="showEmojiCategory('activities')">⚽</button>
+                                    <button class="emoji-category" onclick="showEmojiCategory('travel')">✈️</button>
+                                    <button class="emoji-category" onclick="showEmojiCategory('objects')">💡</button>
+                                    <button class="emoji-category" onclick="showEmojiCategory('symbols')">❤️</button>
+                                    <button class="emoji-category" onclick="showEmojiCategory('flags')">🏳️</button>
+                                </div>
+                                <div class="emoji-grid" id="emoji-grid"></div>
+                            </div>
                         </div>
 
                         <button type="submit" class="btn-post">Post</button>
@@ -150,11 +222,7 @@
                                 <span>{{ meep.comments.count }}</span>
                             </a>
 
-                            <!-- RETWEET -->
-                            <button class="action-button">
-                                <i class="fas fa-retweet"></i>
-                                <span>0</span>
-                            </button>
+                          
 
                             <!-- LIKE -->
                             {% if user in meep.likes.all %}
@@ -175,44 +243,27 @@
                                 </form>
                             {% endif %}
 
-                            <!-- VIEWS -->
-                            <button class="action-button">
-                                <i class="fas fa-chart-simple"></i>
-                                <span>0</span>
-                            </button>
+                           
+                           
 
-                            <!-- SHARE MENU -->
-                            <div class="share-wrapper">
-                                <a href="#" class="action-button"
-                                   onclick="toggleShareMenu(event, '{{ meep.id }}')">
-                                    <i class="fas fa-arrow-up-from-bracket"></i>
-                                </a>
-
-                                <div class="share-popup" id="share-menu-{{ meep.id }}" style="display:none;" 
-                                     data-meep-url="{{ request.scheme|escapejs }}://{{ request.get_host|escapejs }}{% url 'meep_show' pk=meep.id %}"
-                                     data-meep-id="{{ meep.id }}">
-                                    
-                                    <!-- Copy Link -->
-                                    <div class="share-option" data-action="copy">
-                                        <i class="fas fa-link"></i> <span>Copy link</span>
-                                    </div>
-
-                                    <!-- Repost -->
-                                    <div class="share-option" data-action="repost">
-                                        <i class="fas fa-retweet"></i> <span>Repost</span>
-                                    </div>
-
-                                    <!-- WhatsApp -->
-                                    <div class="share-option" data-action="whatsapp">
-                                        <i class="fab fa-whatsapp"></i> <span>Share on WhatsApp</span>
-                                    </div>
-
-                                    <!-- Facebook -->
-                                    <div class="share-option" data-action="facebook">
-                                        <i class="fab fa-facebook"></i> <span>Share on Facebook</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- SHARE -->
+                            {% if user in meep.shares.all %}
+                                <form method="post" action="{% url 'meep_share' meep.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-button like shared">
+                                        <i class="fas fa-share" style="color: var(--primary-color);"></i>
+                                        <span>{{ meep.shares.count }}</span>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'meep_share' meep.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="action-button">
+                                        <i class="fa-solid fa-share" style="color:gray"></i>
+                                        <span>{{ meep.shares.count }}</span>
+                                    </button>
+                                </form>
+                            {% endif %}
 
                         </div>
 
@@ -235,6 +286,77 @@
 
 <script src="{% static 'assets/js/share-menu.js' %}"></script>
 <script>
+// Emoji data
+const emojiData = {
+    smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😶‍🌫️', '🥴', '😵', '🤯', '🤠', '🥳', '😎'],
+    animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈'],
+    food: ['🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🥝', '🍅', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🥒', '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰', '🍞', '🥐', '🥖', '🥨', '🥯', '🥞', '🧇', '🧀', '🍖', '🍗', '🥩', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯', '🥙', '🧆', '🥚', '🍳', '🥘', '🍲', '🥣', '🥗', '🍿', '🧈'],
+    activities: ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🤾', '🏌️', '🏇', '🧘', '🏊', '🚴', '🚵', '🎪', '🎭', '🎨', '🎬', '🎤', '🎧', '🎼', '🎹', '🥁', '🎷', '🎺', '🎸'],
+    travel: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🦯', '🦽', '🦼', '🛴', '🚲', '🛵', '🏍️', '🛺', '🚨', '🚔', '🚍', '🚘', '🚖', '🚡', '🚠', '🚟', '🚃', '🚋', '🚞', '🚝', '🚄', '🚅', '🚈', '🚂', '🚆', '🚇', '🚊', '🚉', '✈️', '🛫', '🛬', '🛩️', '💺', '🛰️', '🚀', '🛸', '🚁', '🛶', '⛵', '🚤', '🛥️', '🛳️', '⛴️', '🚢', '⚓', '⛽'],
+    objects: ['⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '💰', '💳', '💎', '⚖️', '🧰', '🔧', '🔨', '⚒️', '🛠️'],
+    symbols: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️'],
+    flags: ['🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️', '🇦🇫', '🇦🇽', '🇦🇱', '🇩🇿', '🇦🇸', '🇦🇩', '🇦🇴', '🇦🇮', '🇦🇶', '🇦🇬', '🇦🇷', '🇦🇲', '🇦🇼', '🇦🇺', '🇦🇹', '🇦🇿', '🇧🇸', '🇧🇭', '🇧🇩', '🇧🇧', '🇧🇾', '🇧🇪', '🇧🇿', '🇧🇯', '🇧🇲', '🇧🇹', '🇧🇴', '🇧🇦', '🇧🇼', '🇧🇷', '🇮🇴', '🇻🇬', '🇧🇳', '🇧🇬', '🇧🇫', '🇧🇮', '🇰🇭', '🇨🇲', '🇨🇦', '🇮🇨', '🇨🇻', '🇧🇶', '🇰🇾', '🇨🇫', '🇹🇩', '🇨🇱', '🇨🇳', '🇨🇽', '🇨🇨']
+};
+
+let currentCategory = 'smileys';
+
+// Toggle emoji picker
+function toggleEmojiPicker() {
+    const picker = document.getElementById('emoji-picker');
+    picker.classList.toggle('show');
+    if (picker.classList.contains('show')) {
+        showEmojiCategory('smileys');
+    }
+}
+
+// Show emoji category
+function showEmojiCategory(category) {
+    currentCategory = category;
+    const grid = document.getElementById('emoji-grid');
+    grid.innerHTML = '';
+    
+    // Update active category button
+    document.querySelectorAll('.emoji-category').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Add emojis to grid
+    emojiData[category].forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.className = 'emoji-item';
+        btn.textContent = emoji;
+        btn.type = 'button';
+        btn.onclick = () => insertEmoji(emoji);
+        grid.appendChild(btn);
+    });
+}
+
+// Insert emoji at cursor position
+function insertEmoji(emoji) {
+    const textarea = document.getElementById('post-textarea');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    
+    textarea.value = text.substring(0, start) + emoji + text.substring(end);
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+    
+    // Close picker
+    document.getElementById('emoji-picker').classList.remove('show');
+}
+
+// Close emoji picker when clicking outside
+document.addEventListener('click', function(event) {
+    const picker = document.getElementById('emoji-picker');
+    const emojiBtn = event.target.closest('.icon-btn[title="Emoji"]');
+    
+    if (!picker.contains(event.target) && !emojiBtn) {
+        picker.classList.remove('show');
+    }
+});
+
 // Image preview functionality
 document.addEventListener('DOMContentLoaded', function() {
     const imageInput = document.querySelector('input[type="file"]');
@@ -246,7 +368,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const file = event.target.files[0];
             
             if (file) {
-                // Check if the file is an image
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     
@@ -267,11 +388,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Remove image preview
 function removePreviewImage() {
-    const previewContainer = document.getElementById('image-preview-container');
+    const previewContainer = document.getElementById('preview-container');
     const imageInput = document.querySelector('input[type="file"]');
     
     if (previewContainer) {
-        previewContainer.remove();
+        previewContainer.style.display = 'none';
     }
     
     if (imageInput) {

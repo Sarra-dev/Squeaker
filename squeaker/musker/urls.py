@@ -23,5 +23,6 @@ urlpatterns = [
      path('notifications/', views.notifications, name='notifications'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/unread-count/', views.get_unread_count, name='unread_count'),
+    path('meep_share/<int:pk>', views.meep_share, name='meep_share'),
     
 ]

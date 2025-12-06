@@ -44,6 +44,24 @@ class Meep(models.Model):
             f"({self.created_at:%Y-%m-%d %H:%M}): "
             f"{self.body}..."
         )
+class Share(models.Model):
+    user = models.ForeignKey(
+        User, related_name="shares",
+        on_delete=models.CASCADE
+    )
+    meep = models.ForeignKey(
+        Meep, related_name="shares",
+        on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'meep')
+    
+    def __str__(self):
+        return f"{self.user} shared {self.meep.id}"
+
+
 class Hashtag(models.Model):
     """Store unique hashtags"""
     name = models.CharField(max_length=100, unique=True, db_index=True)

@@ -57,9 +57,7 @@
             {% else %}
             <!-- Explore Tabs (when not searching) -->
             <div class="profile-tabs">
-
                 <button class="tab-item" data-tab="trending">Trending</button>
-                
             </div>
             {% endif %}
 
@@ -92,34 +90,94 @@
                                         <span class="post-date">{{ post.created_at|timesince }} ago</span>
                                     </div>
                                     <div class="post-body">{{ post.body }}</div>
+
+                                    <!-- Image if exists -->
+                                    {% if post.image %}
+                                        <img src="{{ post.image.url }}" style="max-width:100%; border-radius:12px; margin-top:10px;">
+                                    {% endif %}
+
                                     <div class="post-actions">
-                                        <button class="action-button">
+                                        <!-- Comment Button with Toggle -->
+                                        <button class="action-button" onclick="toggleCommentBox('{{ post.id }}')">
                                             <i class="far fa-comment"></i>
-                                            <span>0</span>
+                                            <span>{{ post.comments.count }}</span>
                                         </button>
-                                        <button class="action-button">
-                                            <i class="fas fa-retweet"></i>
-                                            <span>0</span>
-                                        </button>
-                                        <form method="POST" action="{% url 'meep_like' post.id %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="action-button like" style="background: none; border: none; cursor: pointer;">
-                                                {% if request.user in post.likes.all %}
-                                                    <i class="fas fa-heart" style="color: #f91880;"></i>
-                                                {% else %}
-                                                    <i class="far fa-heart"></i>
-                                                {% endif %}
+
+                                        
+                                        
+                                        <!-- Like -->
+                                        {% if request.user.is_authenticated %}
+                                            <form method="POST" action="{% url 'meep_like' post.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="action-button like {% if request.user in post.likes.all %}liked{% endif %}" style="background: none; border: none; cursor: pointer;">
+                                                    {% if request.user in post.likes.all %}
+                                                        <i class="fas fa-heart"></i>
+                                                    {% else %}
+                                                        <i class="far fa-heart"></i>
+                                                    {% endif %}
+                                                    <span>{{ post.number_of_likes }}</span>
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <button class="action-button like">
+                                                <i class="far fa-heart"></i>
                                                 <span>{{ post.number_of_likes }}</span>
                                             </button>
-                                        </form>
-                                        <button class="action-button">
-                                            <i class="fas fa-chart-simple"></i>
-                                            <span>0</span>
-                                        </button>
-                                        <button class="action-button">
-                                            <i class="fas fa-arrow-up-from-bracket"></i>
-                                        </button>
+                                        {% endif %}
+
+                                
+
+                                        <!-- Share -->
+                                        {% if request.user.is_authenticated %}
+                                            {% if user in post.shares.all %}
+                                                <form method="post" action="{% url 'meep_share' post.id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="action-button like shared">
+                                                        <i class="fas fa-share" style="color: var(--primary-color);"></i>
+                                                        <span>{{ post.shares.count }}</span>
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" action="{% url 'meep_share' post.id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="action-button">
+                                                        <i class="fa-solid fa-share" style="color:gray"></i>
+                                                        <span>{{ post.shares.count }}</span>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% else %}
+                                            <button class="action-button">
+                                                <i class="fa-solid fa-share" style="color:gray"></i>
+                                                <span>{{ post.shares.count }}</span>
+                                            </button>
+                                        {% endif %}
                                     </div>
+
+                                    <!-- Comment Box (Hidden by default) -->
+                                    {% if request.user.is_authenticated %}
+                                    <div id="comment-box-{{ post.id }}" class="comment-box" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                                        <form method="POST" action="{% url 'meep_comment' post.id %}" style="display: flex; gap: 8px; align-items: flex-start;">
+                                            {% csrf_token %}
+                                            {% if request.user.profile.profile_image %}
+                                                <img src="{{ request.user.profile.profile_image.url }}" class="post-avatar" style="width: 32px; height: 32px; flex-shrink: 0;">
+                                            {% else %}
+                                                <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" class="post-avatar" style="width: 32px; height: 32px; flex-shrink: 0;">
+                                            {% endif %}
+                                            <div style="flex: 1;">
+                                                <textarea 
+                                                    name="comment_body" 
+                                                    placeholder="Post your reply..."
+                                                    style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px; resize: vertical; min-height: 60px; font-family: inherit;"
+                                                    required
+                                                ></textarea>
+                                                <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                                                    <button type="submit" class="btn-post" style="padding: 6px 16px; font-size: 14px;">Reply</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -312,6 +370,22 @@
     .tab-item.active {
         color: var(--text-primary);
     }
+
+    /* Comment Box */
+    .comment-box {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
     </style>
 
     <script>
@@ -326,6 +400,23 @@
             this.classList.add('active');
         });
     });
+
+    // Toggle comment box
+    function toggleCommentBox(meepId) {
+        const commentBox = document.getElementById('comment-box-' + meepId);
+        if (commentBox) {
+            if (commentBox.style.display === 'none') {
+                commentBox.style.display = 'block';
+                // Focus on textarea
+                const textarea = commentBox.querySelector('textarea');
+                if (textarea) {
+                    setTimeout(() => textarea.focus(), 100);
+                }
+            } else {
+                commentBox.style.display = 'none';
+            }
+        }
+    }
     </script>
 </body>
 </html>

@@ -4,7 +4,7 @@ from django.contrib import messages
 from .utils import create_notification
 from .models import Notification, Profile, Meep, Comment
 from .forms import MeepForm, ProfileEditForm , SignUpForm
-from .models import Hashtag, Profile, Meep
+from .models import Hashtag, Profile, Meep, Share
 from .forms import MeepForm, ProfileEditForm, SignUpForm
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -79,7 +79,7 @@ def profile(request, pk):
     
     profile = get_object_or_404(Profile, user_id=pk)
     meeps = Meep.objects.filter(user_id=pk).order_by("-created_at")
-    
+    shared_meeps = Meep.objects.filter(shares__user_id=pk).order_by("-created_at")
     if request.method == "POST":
         current_user_profile = request.user.profile
         action = request.POST.get('follow')
@@ -104,7 +104,11 @@ def profile(request, pk):
         current_user_profile.save()
         return redirect('profile', pk=pk)
     
-    return render(request, "profile.html", {"profile": profile, "meeps": meeps})
+    return render(request, "profile.html", {
+        "profile": profile, 
+        "meeps": meeps,
+        "shared_meeps": shared_meeps
+    })
 
 
 @login_required
@@ -357,3 +361,18 @@ def hashtag_view(request, hashtag_name):
         return render(request, 'hashtag.html', context)
     except Hashtag.DoesNotExist:
         return render(request, 'hashtag.html', {'hashtag': None, 'posts': []})
+def meep_share(request, pk):
+    if request.user.is_authenticated:
+        meep = get_object_or_404(Meep, id=pk)
+        if meep.shares.filter(user=request.user):
+            meep.shares.filter(user=request.user).delete()
+            messages.success(request, "You unshared the meep.")
+        else:
+            Share.objects.create(user=request.user, meep=meep)
+            # Use a short message used for the popup/toast
+            messages.success(request, "sharing successfully!")
+        
+        return redirect(request.META.get("HTTP_REFERER"))
+    else:
+        messages.error(request, 'You must be logged in to share a meep.')
+        return redirect('home')
