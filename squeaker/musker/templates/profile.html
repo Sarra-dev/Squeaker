@@ -224,19 +224,19 @@
 
                                         <!-- Copy Link -->
                                         <div class="share-option"
-                                            onclick="copyLink(event, '{{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}')">
+                                            onclick="copyLink(event, '{{ request.scheme }}'//{{ request.get_host }}{% url 'meep_show' pk=meep.id %}')">
                                             <i class="fas fa-link"></i> Copy link
                                         </div>
 
                                         <!-- WhatsApp -->
                                         <div class="share-option"
-                                            onclick="window.open('https://wa.me/?text={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
+                                            onclick="window.open('https://wa.me/?text={{ request.scheme }}'//{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
                                             <i class="fab fa-whatsapp"></i> Share on WhatsApp
                                         </div>
 
                                         <!-- Facebook -->
                                         <div class="share-option"
-                                            onclick="window.open('https://www.facebook.com/sharer/sharer.php?u={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
+                                            onclick="window.open('https://www.facebook.com/sharer/sharer.php?u={{ request.scheme }}'//{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
                                             <i class="fab fa-facebook"></i> Share on Facebook
                                         </div>
 
@@ -263,4 +263,5 @@
     </div>
     <script src="{% static 'assets/js/share-menu.js' %}"></script>
 </body>
+
 </html>
