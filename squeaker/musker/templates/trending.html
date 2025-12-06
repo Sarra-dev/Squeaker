@@ -3,61 +3,216 @@
 <aside class="trending-sidebar">
     <!-- Search Box -->
     <div class="search-box">
-        <div style="position: relative;">
-            <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 16px;"></i>
-            <input 
-                type="search" 
-                class="search-input"
-                placeholder="Search Squeaker"
-                aria-label="Search"
-            >
-        </div>
+        <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 16px;"></i>
+            <div>
+                 <form method="GET" action="{% url 'explore' %}">
+                    <div style="position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 18px;"></i>
+                        <input 
+                            type="search"
+                            name="q"
+                            value="{{ query }}"
+                            placeholder="Search Squeaker" 
+                            style="width: 100%; padding: 12px 16px 12px 48px; border-radius: 30px; border: 1px solid var(--border-color); background: var(--bg-secondary); font-size: 15px; color: var(--text-primary); outline: none; transition: all 0.2s ease;"
+                            onfocus="this.style.borderColor='var(--primary-color)'; this.style.background='var(--bg-primary)'"
+                            onblur="this.style.borderColor='var(--border-color)'; this.style.background='var(--bg-secondary)'"
+                        >
+                        {% if query %}
+                        <button type="button" onclick="clearSearch()" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: var(--primary-color); border: none; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 12px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+
+            <!-- Search Type Tabs (only show when searching) -->
+            {% if query %}
+            <div class="profile-tabs">
+                <a href="?q={{ query }}&type=meeps" class="tab-item {% if search_type == 'meeps' %}active{% endif %}">Meeps</a>
+                <a href="?q={{ query }}&type=hashtags" class="tab-item {% if search_type == 'hashtags' %}active{% endif %}">Hashtags</a>
+                <a href="?q={{ query }}&type=people" class="tab-item {% if search_type == 'people' %}active{% endif %}">People</a>
+            </div>
+            
+            {% endif %}
+
+            <!-- Content Area -->
+            {% if query %}
+                <!-- SEARCH RESULTS -->
+                
+                <!-- Meeps Search Results -->
+                {% if search_type == 'meeps' %}
+                    {% if meeps %}
+                        {% for post in meeps %}
+                        <div class="post-card">
+                            <div class="post-header">
+                                <a href="{% url 'profile' post.user.pk %}">
+                                    {% if post.user.profile.profile_image %}
+                                        <img src="{{ post.user.profile.profile_image.url }}" alt="{{ post.user.username }}" class="post-avatar">
+                                    {% else %}
+                                        <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ post.user.username }}" class="post-avatar">
+                                    {% endif %}
+                                </a>
+                                <div class="post-content">
+                                    <div class="post-user-info">
+                                        <a href="{% url 'profile' post.user.pk %}" style="text-decoration: none;">
+                                            <span class="post-username">{{ post.user.get_full_name|default:post.user.username }}</span>
+                                        </a>
+                                        {% if post.user.is_staff %}
+                                            <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
+                                        {% endif %}
+                                        <span class="post-handle">@{{ post.user.username }}</span>
+                                        <span class="post-date">{{ post.created_at|timesince }} ago</span>
+                                    </div>
+                                    <div class="post-body">{{ post.body }}</div>
+                                    <div class="post-actions">
+                                        <button class="action-button">
+                                            <i class="far fa-comment"></i>
+                                            <span>0</span>
+                                        </button>
+                                       
+                                        <form method="POST" action="{% url 'meep_like' post.id %}" style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-button like" style="background: none; border: none; cursor: pointer;">
+                                                {% if request.user in post.likes.all %}
+                                                    <i class="fas fa-heart" style="color: #f91880;"></i>
+                                                {% else %}
+                                                    <i class="far fa-heart"></i>
+                                                {% endif %}
+                                                <span>{{ post.number_of_likes }}</span>
+                                            </button>
+                                        </form>
+                                        
+                                        <button class="action-button">
+                                            <i class="fas fa-arrow-up-from-bracket"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <h3>No meeps found</h3>
+                            <p>Try searching for something else</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Hashtags Search Results -->
+                {% if search_type == 'hashtags' %}
+                    {% if hashtags %}
+                        {% for hashtag in hashtags %}
+                        <a href="{% url 'hashtag' hashtag.name %}" class="hashtag-result-item">
+                            <div class="hashtag-icon-wrapper">
+                                <i class="fas fa-hashtag"></i>
+                            </div>
+                            <div class="hashtag-details">
+                                <div class="hashtag-name">#{{ hashtag.name }}</div>
+                                <div class="hashtag-count">{{ hashtag.meep_count }} meep{{ hashtag.meep_count|pluralize }}</div>
+                            </div>
+                            <i class="fas fa-arrow-right" style="color: var(--text-secondary); margin-left: auto;"></i>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-hashtag"></i>
+                            <h3>No hashtags found</h3>
+                            <p>Try searching for something else</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- People Search Results -->
+                {% if search_type == 'people' %}
+                    {% if people %}
+                        {% for profile in people %}
+                        <div class="suggestion-card">
+                            <a href="{% url 'profile' profile.user.id %}" class="profile-link">
+                                {% if profile.profile_image %}
+                                    <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
+                                {% else %}
+                                    <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ profile.user.username }}" class="suggestion-card-avatar">
+                                {% endif %}
+                            </a>
+                            <div class="suggestion-card-info">
+                                <a href="{% url 'profile' profile.user.id %}" style="text-decoration: none;">
+                                    <div class="suggestion-card-name">
+                                        {{ profile.user.get_full_name|default:profile.user.username }}
+                                        {% if profile.user.is_staff %}
+                                            <i class="fas fa-check-circle" style="color: var(--primary-color); font-size: 14px;"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="suggestion-card-username">@{{ profile.user.username|lower }}</div>
+                                </a>
+                                {% if profile.bio %}
+                                    <div class="suggestion-card-bio">{{ profile.bio|truncatewords:15 }}</div>
+                                {% endif %}
+                            </div>
+                            {% if request.user.is_authenticated and request.user != profile.user %}
+                            <form method="POST" action="{% url 'profile' profile.user.id %}" style="margin-left: auto;">
+                                {% csrf_token %}
+                                {% if request.user.profile in profile.followed_by.all %}
+                                    <button type="submit" name="follow" value="unfollow" class="btn-following-small"></button>
+                                {% else %}
+                                    <button type="submit" name="follow" value="follow" class="follow-btn-small">Follow</button>
+                                {% endif %}
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user"></i>
+                            <h3>No people found</h3>
+                            <p>Try searching for something else</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+            {% endif %}
+    
+        </form>
     </div>
 
-
+    <!-- What's Happening Widget - DYNAMIC TRENDING -->
     <div class="widget">
         <div class="widget-header">What's happening</div>
         
+        {% if trending_topics %}
+            {% for topic in trending_topics %}
+                <a href="{% url 'hashtag' topic.name %}" class="widget-item" style="text-decoration: none; color: inherit; display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
+                                Trending
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
+                                #{{ topic.name }}
+                            </div>
+                            
+                        </div>
+                        <button class="icon-button" style="margin-left: 8px;" onclick="event.preventDefault(); event.stopPropagation();">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                    </div>
+                </a>
+            {% endfor %}
+        {% else %}
+            <!-- Fallback when no trending topics -->
+            <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 15px;">
+                <p style="margin: 0 0 8px 0;">No trending topics yet</p>
+                <p style="margin: 0; font-size: 13px;">Start using hashtags in your meeps!</p>
+            </div>
+        {% endif %}
         
-        <div class="widget-item">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
-                        Trending in Technology
-                    </div>
-                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
-                        #OpenSource
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-secondary);">
-                        45.2K posts
-                    </div>
-                </div>
-                <button class="icon-button" style="margin-left: 8px;">
-                    <i class="fas fa-ellipsis-h"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Trending Item 2 -->
-        <div class="widget-item">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">
-                        Technology · Trending
-                    </div>
-                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px;">
-                        Artificial Intelligence
-                    </div>
-                    <div style="font-size: 13px; color: var(--text-secondary);">
-                        127K posts
-                    </div>
-                </div>
-                <button class="icon-button" style="margin-left: 8px;">
-                    <i class="fas fa-ellipsis-h"></i>
-                </button>
-            </div>
-        </div>
-      
+        <!-- Show More Link -->
+        {% if trending_topics %}
+            <a href="{% url 'explore' %}" class="widget-item" style="color: var(--primary-color); cursor: pointer; text-decoration: none;">
+                Show more
+            </a>
+        {% endif %}
     </div>
 
     <!-- Who to Follow Widget -->

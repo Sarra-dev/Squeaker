@@ -5,126 +5,137 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ profile.user.username }} - Profile</title>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'assets/css/profile.css' %}">
     <link rel="stylesheet" href="{% static 'assets/css/share-menu.css' %}">
 </head>
 <body>
-    <div class="main-container">
-        {% include 'navbar.html' %}
 
-        <div class="main-content">
-            <div class="content-header">
-                <div class="header-content">
-                    <button class="back-button" onclick="window.history.back()">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                    <div class="header-title">
-                        <div class="header-name">{{ profile.user.get_full_name|default:profile.user.username }}</div>
-                        <div class="header-count">{{ meeps.count }} posts</div>
-                    </div>
+<div class="main-container">
+
+    {% include 'navbar.html' %}
+
+    <div class="main-content">
+
+        <!-- HEADER -->
+        <div class="content-header">
+            <div class="header-content">
+                <button class="back-button" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="header-title">
+                    <div class="header-name">{{ profile.user.get_full_name|default:profile.user.username }}</div>
+                    <div class="header-count">{{ meeps.count }} posts</div>
                 </div>
             </div>
+        </div>
 
-            <div class="profile-header">
-                <div class="cover-image-container">
-                    {% if profile.cover_image %}
-                        <img src="{{ profile.cover_image.url }}" class="cover-image">
-                    {% else %}
-                        <img src="{% static 'images/logo1-removebg-preview.png' %}" alt="Cover" class="cover-image">
-                    {% endif %}
-                </div>
+        <!-- PROFILE HEADER -->
+        <div class="profile-header">
 
-                <div class="profile-info-section">
-                    <div class="profile-top">
-                        <div class="profile-image-container">
-                            {% if profile.profile_image %}
-                                <img src="{{ profile.profile_image.url }}" alt="{{ profile.user.username }}" class="profile-image">
-                            {% else %}
-                                <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="{{ profile.user.username }}" class="profile-image">
-                            {% endif %}
-                        </div>
+            <div class="cover-image-container">
+                {% if profile.cover_image %}
+                    <img src="{{ profile.cover_image.url }}" class="cover-image">
+                {% else %}
+                    <img src="{% static 'images/logo1-removebg-preview.png' %}" class="cover-image">
+                {% endif %}
+            </div>
 
-                        <div class="profile-actions">
-                            {% if profile.user == request.user %}
-                                <a href="{% url 'edit_profile' %}" class="btn-edit">Edit profile</a>
-                            {% else %}
-                                <button class="icon-button">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
+            <div class="profile-info-section">
 
-                                <a href="{% url 'start_conversation' profile.user.id %}" class="icon-button" title="Message @{{ profile.user.username }}">
-                                    <i class="far fa-envelope"></i>
-                                </a>
+                <div class="profile-top">
 
-                                <form method="POST" action="{% url 'profile' profile.user.pk %}" style="display: inline;">
-                                    {% csrf_token %}
-                                    {% if request.user.profile in profile.followed_by.all %}
-                                        <button type="submit" name="follow" value="unfollow" class="btn-unfollow">Following</button>
-                                    {% else %}
-                                        <button type="submit" name="follow" value="follow" class="btn-follow">Follow</button>
-                                    {% endif %}
-                                </form>
-                            {% endif %}
-                        </div>
+                    <div class="profile-image-container">
+                        {% if profile.profile_image %}
+                            <img src="{{ profile.profile_image.url }}" class="profile-image">
+                        {% else %}
+                            <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" class="profile-image">
+                        {% endif %}
                     </div>
 
-                    <div class="profile-details">
-                        <h1 class="profile-name">
-                            {{ profile.user.get_full_name|default:profile.user.username }}
-                            {% if profile.user.is_staff %}
-                                <i class="fas fa-check-circle verified-badge"></i>
-                            {% endif %}
-                        </h1>
+                    <div class="profile-actions">
+                        {% if profile.user == request.user %}
+                            <a href="{% url 'edit_profile' %}" class="btn-edit">Edit profile</a>
+                        {% else %}
+                            <button class="icon-button"><i class="fas fa-ellipsis-h"></i></button>
 
-                        <p class="profile-username">@{{ profile.user.username }}</p>
+                            <a href="{% url 'start_conversation' profile.user.id %}" class="icon-button">
+                                <i class="far fa-envelope"></i>
+                            </a>
 
-                        {% if profile.bio %}
-                            <p class="profile-bio">{{ profile.bio }}</p>
+                            <form method="POST" action="{% url 'profile' profile.user.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                {% if request.user.profile in profile.followed_by.all %}
+                                    <button type="submit" name="follow" value="unfollow" class="btn-unfollow">Following</button>
+                                {% else %}
+                                    <button type="submit" name="follow" value="follow" class="btn-follow">Follow</button>
+                                {% endif %}
+                            </form>
+
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="profile-details">
+                    <h1 class="profile-name">
+                        {{ profile.user.get_full_name|default:profile.user.username }}
+                        {% if profile.user.is_staff %}
+                            <i class="fas fa-check-circle verified-badge"></i>
+                        {% endif %}
+                    </h1>
+
+                    <p class="profile-username">@{{ profile.user.username }}</p>
+
+                    {% if profile.bio %}
+                        <p class="profile-bio">{{ profile.bio }}</p>
+                    {% endif %}
+
+                    <div class="profile-meta">
+                        {% if profile.location %}
+                            <span><i class="fas fa-map-marker-alt"></i> {{ profile.location }}</span>
                         {% endif %}
 
-                        <div class="profile-meta">
-                            {% if profile.location %}
-                                <span><i class="fas fa-map-marker-alt"></i> {{ profile.location }}</span>
-                            {% endif %}
+                        {% if profile.website %}
+                            <span><i class="fas fa-link"></i>
+                                <a href="{{ profile.website }}" target="_blank">{{ profile.website|slice:":30" }}</a>
+                            </span>
+                        {% endif %}
 
-                            {% if profile.website %}
-                                <span><i class="fas fa-link"></i>
-                                    <a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">
-                                        {{ profile.website|slice:":30" }}
-                                    </a>
-                                </span>
-                            {% endif %}
+                        <span><i class="fas fa-calendar-alt"></i> Joined {{ profile.date_created|date:"F Y" }}</span>
+                    </div>
 
-                            <span><i class="fas fa-calendar-alt"></i> Joined {{ profile.date_created|date:"F Y" }}</span>
-                        </div>
+                    <div class="profile-stats">
+                        <a href="#" class="stat-item">
+                            <span class="stat-number">{{ profile.following_count }}</span>
+                            <span class="stat-label">Following</span>
+                        </a>
 
-                        <div class="profile-stats">
-                            <a href="#" class="stat-item">
-                                <span class="stat-number">{{ profile.following_count }}</span>
-                                <span class="stat-label">Following</span>
-                            </a>
-
-                            <a href="#" class="stat-item">
-                                <span class="stat-number">{{ profile.followers_count }}</span>
-                                <span class="stat-label">Followers</span>
-                            </a>
-                        </div>
+                        <a href="#" class="stat-item">
+                            <span class="stat-number">{{ profile.followers_count }}</span>
+                            <span class="stat-label">Followers</span>
+                        </a>
                     </div>
                 </div>
-            </div>
 
-            <div class="profile-tabs">
-                <button class="tab-item active">Posts</button>
-                <button class="tab-item">Replies</button>
-                <button class="tab-item">Highlights</button>
-                <button class="tab-item">Media</button>
             </div>
+        </div>
 
+        <!-- TABS -->
+        <div class="profile-tabs">
+            <button class="tab-item active" onclick="showTab('posts-tab', this)">Posts</button>
+            <button class="tab-item" onclick="showTab('shares-tab', this)">Shares</button>
+        </div>
+
+        <!-- POSTS TAB -->
+        <div id="posts-tab">
             {% if meeps %}
                 {% for meep in meeps %}
                     <div class="post-card">
                         <div class="post-header">
+
                             <a href="{% url 'profile' meep.user.pk %}">
                                 {% if meep.user.profile.profile_image %}
                                     <img src="{{ meep.user.profile.profile_image.url }}" class="post-avatar">
@@ -134,10 +145,9 @@
                             </a>
 
                             <div class="post-content">
+
                                 <div class="post-user-info">
-                                    <a href="{% url 'profile' meep.user.pk %}" class="post-username">
-                                        {{ meep.user.username }}
-                                    </a>
+                                    <a href="{% url 'profile' meep.user.pk %}" class="post-username">{{ meep.user.username }}</a>
 
                                     {% if meep.user.is_staff %}
                                         <i class="fas fa-check-circle" style="color:var(--primary-color); font-size:14px;"></i>
@@ -154,64 +164,45 @@
                                 {% endif %}
 
                                 <div class="post-actions">
-                                    <a href="{% url 'meep_show' pk=meep.id %}" class="action-button">
+
+                                    <!-- Comments -->
+                                    <a href="{% url 'meep_show' meep.id %}" class="action-button">
                                         <i class="far fa-comment"></i>
                                         <span>{{ meep.comments.count }}</span>
                                     </a>
 
-                                    <button class="action-button">
-                                        <i class="fas fa-retweet"></i>
-                                        <span>0</span>
-                                    </button>
+                                    <!-- Like -->
+                                    <form method="post" action="{% url 'meep_like' meep.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="action-button like {% if user in meep.likes.all %}liked{% endif %}">
+                                            <i class="{% if user in meep.likes.all %}fas{% else %}far{% endif %} fa-heart"></i>
+                                            <span>{{ meep.number_of_likes }}</span>
+                                        </button>
+                                    </form>
 
-                                    {% if user in meep.likes.all %}
-                                        <form method="post" action="{% url 'meep_like' meep.id %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="action-button like liked">
-                                                <i class="fas fa-heart"></i>
-                                                <span>{{ meep.number_of_likes }}</span>
-                                            </button>
-                                        </form>
-                                    {% else %}
-                                        <form method="post" action="{% url 'meep_like' meep.id %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="action-button like">
-                                                <i class="far fa-heart"></i>
-                                                <span>{{ meep.number_of_likes }}</span>
-                                            </button>
-                                        </form>
-                                    {% endif %}
-
-                                    <button class="action-button">
-                                        <i class="fas fa-chart-simple"></i>
-                                        <span>0</span>
-                                    </button>
-
+                                    <!-- Share menu -->
                                     <div class="share-wrapper">
-                                        <a href="#" class="action-button"
-                                           onclick="toggleShareMenu(event, '{{ meep.id }}')">
+                                        <a href="#" class="action-button" onclick="toggleShareMenu(event, '{{ meep.id }}')">
                                             <i class="fas fa-arrow-up-from-bracket"></i>
                                         </a>
 
                                         <div class="share-popup" id="share-menu-{{ meep.id }}" style="display:none;">
-                                            <div class="share-option"
-                                                 onclick="copyLink(event, '{{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}')">
+                                            <div class="share-option" onclick="copyLink(event, '{{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' meep.id %}')">
                                                 <i class="fas fa-link"></i> Copy link
                                             </div>
 
-                                            <div class="share-option"
-                                                 onclick="window.open('https://wa.me/?text={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
+                                            <div class="share-option" onclick="window.open('https://wa.me/?text={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' meep.id %}', '_blank')">
                                                 <i class="fab fa-whatsapp"></i> Share on WhatsApp
                                             </div>
 
-                                            <div class="share-option"
-                                                 onclick="window.open('https://www.facebook.com/sharer/sharer.php?u={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' pk=meep.id %}', '_blank')">
+                                            <div class="share-option" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u={{ request.scheme }}://{{ request.get_host }}{% url 'meep_show' meep.id %}', '_blank')">
                                                 <i class="fab fa-facebook"></i> Share on Facebook
                                             </div>
                                         </div>
                                     </div>
 
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -220,27 +211,68 @@
                 <div class="empty-state">
                     <i class="far fa-comment"></i>
                     <h3>No posts yet</h3>
-                    <p>When people post, they'll appear here.</p>
+                    <p>When @{{ profile.user.username }} posts, they'll show up here.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- SHARES TAB -->
+        <div id="shares-tab" style="display:none;">
+            {% if shared_meeps %}
+                {% for meep in shared_meeps %}
+                    <div class="post-card">
+                        <div class="post-header">
+
+                            {% if meep.user.profile.profile_image %}
+                                <img src="{{ meep.user.profile.profile_image.url }}" class="post-avatar">
+                            {% else %}
+                                <img src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" class="post-avatar">
+                            {% endif %}
+
+                            <div class="post-content">
+                                <div class="post-user-info">
+                                    <span class="post-username">{{ meep.user.username }}</span>
+
+                                    {% if meep.user.is_staff %}
+                                        <i class="fas fa-check-circle" style="color:var(--primary-color); font-size:14px;"></i>
+                                    {% endif %}
+
+                                    <span class="post-handle">@{{ meep.user.username }}</span>
+                                    <span class="post-date">{{ meep.created_at|timesince }}</span>
+                                </div>
+
+                                <div class="post-body">{{ meep.body }}</div>
+
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-share"></i>
+                    <h3>No shares yet</h3>
                 </div>
             {% endif %}
         </div>
 
         {% include 'trending.html' %}
+
     </div>
+</div>
 
-    <!-- From YOUR version -->
-    <style>
-        .profile-actions a.icon-button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: inherit;
-        }
-    </style>
+<script src="{% static 'assets/js/share-menu.js' %}"></script>
 
-    <!-- From REMOTE version -->
-    <script src="{% static 'assets/js/share-menu.js' %}"></script>
+<script>
+function showTab(tabId, button) {
+    document.getElementById("posts-tab").style.display = "none";
+    document.getElementById("shares-tab").style.display = "none";
+
+    document.getElementById(tabId).style.display = "block";
+
+    document.querySelectorAll(".tab-item").forEach(b => b.classList.remove("active"));
+    button.classList.add("active");
+}
+</script>
 
 </body>
 </html>
