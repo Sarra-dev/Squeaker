@@ -44,4 +44,6 @@ urlpatterns = [
     path('messages/send/', views.send_message, name='send_message'),
     path('messages/get/<int:user_id>/', views.get_new_messages, name='get_new_messages'),
     path('messages/start/<int:user_id>/', views.start_conversation, name='start_conversation'),
+    path('chat/', views.chatbot_view, name='chatbot'),
+    path('api/chat/', views.chat_api, name='chat_api'),
 ]
