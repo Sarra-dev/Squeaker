@@ -5,34 +5,104 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.urls import reverse
-
+import logging
+logger = logging.getLogger(__name__)
 # -------------------------
 # MEEP MODEL
 # -------------------------
 class Meep(models.Model):
-    user = models.ForeignKey(User, related_name="meeps", on_delete=models.DO_NOTHING)
+    
+    user = models.ForeignKey(User, related_name="meeps", on_delete=models.CASCADE)
     body = models.CharField(max_length=200)
+    image = models.ImageField(upload_to='meep_images/', null=True, blank=True)  # ← THIS LINE MUST BE HERE
     created_at = models.DateTimeField(auto_now_add=True)
-    likes = models.ManyToManyField(User, related_name="meep_likes", blank=True)
-    image = models.ImageField(upload_to='meep_images/', blank=True, null=True)
-
+    likes = models.ManyToManyField(User, related_name="meep_like", blank=True)
+    hashtags = models.ManyToManyField('Hashtag', related_name="meeps", blank=True)
+    
+    is_toxic = models.BooleanField(default=False)
+    is_borderline = models.BooleanField(default=False)
+    toxicity_score = models.FloatField(default=0.0)
+    toxicity_label = models.CharField(max_length=20, default='safe')
+    
     def number_of_likes(self):
         return self.likes.count()
-
+    
     def save(self, *args, **kwargs):
+        """Save with toxicity checking"""
+        is_new = self.pk is None
+        
+        # Check toxicity BEFORE saving (for new meeps)
+        if is_new and self.body:
+            from .toxicity_detector import analyze_content
+            result = analyze_content(self.body)
+            self.is_toxic = result['is_toxic']
+            self.is_borderline = result['is_borderline']
+            self.toxicity_score = result['toxicity_score']
+            self.toxicity_label = result['label']
+        
+        # Save the meep
         super().save(*args, **kwargs)
-        self.extract_hashtags()
-
+        
+        # Extract hashtags after save (needs ID)
+        if is_new:
+            self.extract_hashtags()
     def extract_hashtags(self):
+        """Extract hashtags from meep body and create/link them"""
+        from .models import Hashtag
+        
         hashtag_pattern = r'#(\w+)'
-        hashtags = set(re.findall(hashtag_pattern, self.body))
-        for tag in hashtags:
-            hashtag_obj, _ = Hashtag.objects.get_or_create(name=tag.lower())
-            MeepHashtag.objects.get_or_create(meep=self, hashtag=hashtag_obj)
-
+        hashtag_matches = re.findall(hashtag_pattern, self.body)
+        
+        self.hashtags.clear()
+        
+        for tag_name in hashtag_matches:
+            tag_name = tag_name.lower()
+            hashtag, created = Hashtag.objects.get_or_create(name=tag_name)
+            self.hashtags.add(hashtag)
+    
+    def check_toxicity(self):
+        """
+        Check content for toxicity using AI model
+        Updates toxicity fields automatically
+        """
+        from .toxicity_detector import analyze_content
+        
+        result = analyze_content(self.body)
+        
+        # Update fields
+        self.is_toxic = result['is_toxic']
+        self.is_borderline = result['is_borderline']
+        self.toxicity_score = result['toxicity_score']
+        self.toxicity_label = result['label']
+        
+        # Save without triggering check_toxicity again
+        super().save(update_fields=[
+            'is_toxic', 
+            'is_borderline', 
+            'toxicity_score', 
+            'toxicity_label'
+        ])
+    
+    def should_blur(self):
+        """
+        Determine if content should be blurred
+        Returns True for toxic or borderline content
+        """
+        return self.is_toxic or self.is_borderline
+    
+    def get_warning_message(self):
+        """Get appropriate warning message based on toxicity level"""
+        if self.is_toxic:
+            return "This content may be offensive or harmful"
+        elif self.is_borderline:
+            return "This content may be sensitive"
+        return None
+    
     def __str__(self):
-        return f"{self.user.username} ({self.created_at:%Y-%m-%d %H:%M}): {self.body[:20]}"
-
+        return f"{self.user.username}: {self.body[:50]}"
+    
+    class Meta:
+        ordering = ['-created_at']
 
 # -------------------------
 # SHARE MODEL
