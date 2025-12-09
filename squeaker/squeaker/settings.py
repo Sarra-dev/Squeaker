@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,6 +29,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
+print(f"🔑 GROQ_API_KEY loaded: {bool(GROQ_API_KEY)}")
+print(f"🔑 Key length: {len(GROQ_API_KEY)}")
 
 # Application definition
 

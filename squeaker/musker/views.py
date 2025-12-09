@@ -6,12 +6,18 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Q, Count
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from datetime import timedelta
+import json
+import requests
+import logging
 
 from .models import Profile, Meep, Comment, Notification,Hashtag, Share, Message, Conversation
 from .forms import MeepForm, ProfileEditForm, SignUpForm
 from .utils import create_notification
 
+logger = logging.getLogger(__name__)
 
 def home(request):
     """Main home view"""
@@ -430,3 +436,90 @@ def meep_share(request, pk):
         return redirect(request.META.get("HTTP_REFERER"))
     messages.error(request, 'You must be logged in to share a meep.')
     return redirect('home')
+
+
+# ==================== CHATBOT VIEWS ====================
+
+@login_required
+def chatbot_view(request):
+    """Render the chatbot page"""
+    return render(request, 'chatbot.html')
+
+
+@csrf_exempt
+@login_required
+def chat_api(request):
+    """Handle chat API requests using Groq (FREE)"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Parse request
+        data = json.loads(request.body)
+        messages_list = data.get('messages', [])
+        
+        if not messages_list:
+            return JsonResponse({'error': 'No messages provided'}, status=400)
+        
+        # Get API key
+        api_key = getattr(settings, 'GROQ_API_KEY', '')
+        
+        print(f"🔑 API Key present: {bool(api_key)}")
+        print(f"🔑 API Key length: {len(api_key) if api_key else 0}")
+        print(f"🔑 API Key starts with: {api_key[:15] if api_key else 'EMPTY'}")
+        print(f"📨 Sending {len(messages_list)} messages to Groq")
+        
+        if not api_key:
+            return JsonResponse({
+                'error': 'API key not configured in settings.py'
+            }, status=500)
+        
+        # Call Groq API
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            },
+            json={
+                'model': 'llama-3.3-70b-versatile',
+                'messages': messages_list,
+                'max_tokens': 1000,
+                'temperature': 0.7
+            },
+            timeout=30
+        )
+        
+        # Check response
+        print(f"✅ Groq API Status: {response.status_code}")
+        print(f"📝 Groq API Response: {response.text}")
+        
+        if response.status_code != 200:
+            return JsonResponse({
+                'error': f'API error: {response.status_code}',
+                'details': response.text
+            }, status=200)  # Return 200 so browser shows the error
+        
+        # Parse response
+        groq_response = response.json()
+        bot_message = groq_response['choices'][0]['message']['content']
+        
+        # Return in expected format
+        return JsonResponse({
+            'content': [
+                {
+                    'type': 'text',
+                    'text': bot_message
+                }
+            ]
+        })
+        
+    except Exception as e:
+        # Print error to console
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return JsonResponse({
+            'error': f'Error: {str(e)}'
+        }, status=500)
