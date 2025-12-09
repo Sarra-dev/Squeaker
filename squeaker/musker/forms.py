@@ -27,9 +27,7 @@ class MeepForm(forms.ModelForm):
 
     class Meta:
         model = Meep
-        exclude = ("user", "likes")
-
-
+        fields = ['body', 'image'] 
 class ProfileEditForm(forms.ModelForm):
     profile_image = forms.ImageField(
         required=False,

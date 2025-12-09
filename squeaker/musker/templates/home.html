@@ -77,6 +77,75 @@
         .emoji-item:hover {
             background: var(--hover-bg);
         }
+
+        /* ✅ TOXICITY BLUR STYLES - ONLY ADDITION */
+        .toxicity-warning {
+            background: linear-gradient(135deg, rgba(255, 85, 85, 0.1) 0%, rgba(255, 0, 0, 0.05) 100%);
+            border: 1px solid rgba(255, 85, 85, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .warning-content {
+            display: flex;
+            gap: 12px;
+            align-items: start;
+            flex: 1;
+        }
+
+        .warning-content i {
+            color: #ff5555;
+            font-size: 20px;
+            margin-top: 2px;
+        }
+
+        .warning-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .warning-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .show-content-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 85, 85, 0.5);
+            color: #ff5555;
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .show-content-btn:hover {
+            background: rgba(255, 85, 85, 0.1);
+            border-color: #ff5555;
+        }
+
+        .blurred-content {
+            filter: blur(8px)!important;
+            user-select: none;
+            pointer-events: none;
+            transition: filter 0.3s ease;
+        }
+
+        .blurred-content.revealed {
+            filter: blur(0)!important;
+            user-select: text;
+            pointer-events: auto;
+        }
     </style>
 </head>
 
@@ -204,8 +273,40 @@
                             <span class="post-date">{{ meep.created_at|timesince }}</span>
                         </div>
 
-                        <!-- TEXT -->
-                        <div class="post-body">{{ meep.body }}</div>
+                        <!-- ✅ TOXICITY WARNING & BLURRED TEXT - ONLY ADDITION -->
+                        <!-- Replace the toxicity section (around line 280-310) with this: -->
+
+{% if meep.should_blur %}
+<div id="toxic-{{ meep.id }}">
+    <!-- Warning Banner -->
+    <div class="toxicity-warning" id="warning-{{ meep.id }}">
+        <div class="warning-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <div class="warning-title">{{ meep.get_warning_message }}</div>
+                <div class="warning-subtitle">
+                    {% if meep.is_toxic %}
+                        This content was flagged by our AI moderation system
+                    {% else %}
+                        Some people may find this content sensitive
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <button class="show-content-btn" onclick="showToxicContent('{{ meep.id }}')">
+            Show anyway
+        </button>
+    </div>
+    
+    <!-- Blurred Content -->
+    <div class="post-body blurred-content" id="content-{{ meep.id }}">
+        {{ meep.body }}
+    </div>
+</div>
+{% else %}
+<!-- Normal Content -->
+<div class="post-body">{{ meep.body }}</div>
+{% endif %}
 
                         <!-- IMAGE -->
                         {% if meep.image %}
@@ -286,6 +387,20 @@
 
 <script src="{% static 'assets/js/share-menu.js' %}"></script>
 <script>
+// ✅ TOXICITY BLUR FUNCTION - ONLY ADDITION
+function showToxicContent(meepId) {
+    const content = document.getElementById(`content-${meepId}`);
+    const warning = document.getElementById(`warning-${meepId}`);
+    
+    if (content) {
+        content.classList.add('revealed');
+    }
+    
+    if (warning) {
+        warning.style.display = 'none';
+    }
+}
+
 // Emoji data
 const emojiData = {
     smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😶‍🌫️', '🥴', '😵', '🤯', '🤠', '🥳', '😎'],

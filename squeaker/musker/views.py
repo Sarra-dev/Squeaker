@@ -13,11 +13,7 @@ import json
 import requests
 import logging
 
-from .models import (
-    Profile, Meep, Comment, Notification,
-    Hashtag, Share, Message, Conversation
-)
-
+from .models import Profile, Meep, Comment, Notification,Hashtag, Share, Message, Conversation
 from .forms import MeepForm, ProfileEditForm, SignUpForm
 from .utils import create_notification
 
@@ -28,19 +24,36 @@ def home(request):
     meeps = Meep.objects.all().order_by("-created_at")
     if request.user.is_authenticated:
         if request.method == "POST":
+            print("=" * 50)
+            print("POST REQUEST RECEIVED")
+            print("POST data:", request.POST)
+            print("FILES data:", request.FILES)
+            print("=" * 50)
+            
             form = MeepForm(request.POST, request.FILES)
+            
+            print("Form is valid?", form.is_valid())
+            if not form.is_valid():
+                print("Form errors:", form.errors)
+            
             if form.is_valid():
-                meep = form.save(commit=False)
-                meep.user = request.user
-                meep.save()
-                messages.success(request, "Your Squeak Has Been Posted")
-                return redirect('home')
+                try:
+                    meep = form.save(commit=False)
+                    meep.user = request.user
+                    print("About to save meep...")
+                    meep.save()
+                    print("Meep saved successfully! ID:", meep.id)
+                    messages.success(request, "Your Squeak Has Been Posted")
+                    return redirect('home')
+                except Exception as e:
+                    print("ERROR SAVING MEEP:", str(e))
+                    import traceback
+                    traceback.print_exc()
+                    messages.error(request, f"Error: {str(e)}")
         else:
             form = MeepForm()
         return render(request, 'home.html', {"meeps": meeps, "form": form})
     return render(request, 'home.html', {"meeps": meeps})
-
-
 @login_required
 def profile_list(request):
     """Profile list view"""
