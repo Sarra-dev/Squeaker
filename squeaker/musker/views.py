@@ -265,10 +265,15 @@ def explore(request):
             meeps = Meep.objects.filter(
                 Q(body__icontains=query) | Q(user__username__icontains=query)
             ).select_related('user', 'user__profile').order_by('-created_at')[:50]
+            
         elif search_type == 'hashtags':
+            # FIX: Use 'meeps' instead of 'meephashtag'
             hashtags = Hashtag.objects.filter(
                 name__icontains=query
-            ).annotate(meep_count=Count('meephashtag')).order_by('-meep_count')[:20]
+            ).annotate(
+                meep_count=Count('meeps', distinct=True)  # Changed from 'meephashtag'
+            ).order_by('-meep_count')[:20]
+            
         elif search_type == 'people':
             people = Profile.objects.filter(
                 Q(user__username__icontains=query) |
@@ -279,11 +284,23 @@ def explore(request):
     else:
         meeps = Meep.objects.all().select_related('user', 'user__profile').order_by('-created_at')[:50]
 
-    # Trending hashtags
-    time_threshold = timezone.now() - timedelta(days=7)
+    # FIX: Trending hashtags - Use 'meeps' relationship instead of 'meephashtag'
+    time_threshold = timezone.now() - timedelta(days=30)  # Last 30 days
+    
     trending_hashtags = Hashtag.objects.filter(
-        meephashtag__meep__created_at__gte=time_threshold
-    ).annotate(meep_count=Count('meephashtag')).filter(meep_count__gte=2).order_by('-meep_count')[:10]
+        meeps__created_at__gte=time_threshold  # Changed from 'meephashtag__meep__created_at'
+    ).annotate(
+        meep_count=Count('meeps', distinct=True)  # Changed from 'meephashtag'
+    ).filter(
+        meep_count__gte=2  # At least 2 meeps to be considered trending
+    ).order_by('-meep_count')[:10]
+    
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"🔍 Explore trending: Found {trending_hashtags.count()} hashtags")
+    for tag in trending_hashtags:
+        logger.info(f"   #{tag.name} - {tag.meep_count} meeps")
 
     return render(request, 'explore.html', {
         'meeps': meeps,
