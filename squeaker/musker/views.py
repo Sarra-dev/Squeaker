@@ -17,6 +17,12 @@ from .models import Profile, Meep, Comment, Notification,Hashtag, Share, Message
 from .forms import MeepForm, ProfileEditForm, SignUpForm
 from .utils import create_notification
 
+from django.views.decorators.http import require_http_methods
+from .autocorrect_utils import autocorrect_text, check_spelling_errors
+
+
+
+
 logger = logging.getLogger(__name__)
 
 def home(request):
@@ -523,3 +529,99 @@ def chat_api(request):
         return JsonResponse({
             'error': f'Error: {str(e)}'
         }, status=500)
+    
+@csrf_exempt
+@login_required
+@require_http_methods(["POST"])
+def autocorrect_api(request):
+    """
+    API endpoint for autocorrecting text
+    """
+    try:
+        data = json.loads(request.body)
+        text = data.get('text', '')
+        advanced = data.get('advanced', False)  # Get advanced mode flag
+        
+        if not text:
+            return JsonResponse({'error': 'No text provided'}, status=400)
+        
+        # Get corrected text
+        corrected = autocorrect_text(text)
+        
+        # Get spelling errors from the ORIGINAL text
+        errors = check_spelling_errors(text)
+        error_count = len(errors)
+        
+        # Calculate changes made
+        changes_made = text != corrected
+        
+        response_data = {
+            'success': True,
+            'original_text': text,
+            'corrected_text': corrected,
+            'errors': errors,
+            'error_count': error_count,
+            'has_errors': error_count > 0,
+            'changes_made': changes_made,
+            'message': f'Fixed {error_count} spelling {"error" if error_count == 1 else "errors"}' if changes_made else 'No spelling errors found'
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        logger.error(f"Autocorrect error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to autocorrect text'
+        }, status=500)
+
+
+@csrf_exempt
+@login_required
+@require_http_methods(["POST"])
+def check_spelling_api(request):
+    """
+    API endpoint for checking spelling without correcting
+    """
+    try:
+        data = json.loads(request.body)
+        text = data.get('text', '')
+        
+        if not text:
+            return JsonResponse({'error': 'No text provided'}, status=400)
+        
+        errors = check_spelling_errors(text)
+        error_count = len(errors)
+        
+        return JsonResponse({
+            'success': True,
+            'errors': errors,
+            'error_count': error_count,
+            'has_errors': error_count > 0,
+            'message': f'Found {error_count} spelling {"error" if error_count == 1 else "errors"}' if error_count > 0 else 'No spelling errors found'
+        })
+        
+    except Exception as e:
+        logger.error(f"Spell check error: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@csrf_exempt
+def test_autocorrect(request):
+    """Test endpoint for autocorrect"""
+    test_text = "I lke programming and make speling misteaks"
+    corrected = autocorrect_text(test_text)
+    errors = check_spelling_errors(test_text)
+    
+    return JsonResponse({
+        'test': 'Autocorrect Test',
+        'original': test_text,
+        'corrected': corrected,
+        'errors': errors,
+        'success': True
+    })

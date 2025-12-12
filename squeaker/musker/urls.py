@@ -46,4 +46,10 @@ urlpatterns = [
     path('messages/start/<int:user_id>/', views.start_conversation, name='start_conversation'),
     path('chat/', views.chatbot_view, name='chatbot'),
     path('api/chat/', views.chat_api, name='chat_api'),
+
+    # Add to urlpatterns list
+    path('api/autocorrect/', views.autocorrect_api, name='autocorrect_api'),
+    path('api/check-spelling/', views.check_spelling_api, name='check_spelling_api'),
+   
+ 
 ]

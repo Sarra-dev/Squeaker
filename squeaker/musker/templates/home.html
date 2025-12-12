@@ -146,6 +146,60 @@
             user-select: text;
             pointer-events: auto;
         }
+
+        /* Autocorrect button styling */
+        .autocorrect-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .autocorrect-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .autocorrect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spelling-indicator {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(245, 166, 35, 0.1);
+            border-left: 3px solid #f5a623;
+            font-size: 12px;
+            font-weight: 500;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Spell check icon animation */
+        .fa-spell-check {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
     </style>
 </head>
 
@@ -400,6 +454,289 @@ function showToxicContent(meepId) {
         warning.style.display = 'none';
     }
 }
+
+
+let autocorrectTimeout;
+const textarea = document.getElementById('post-textarea');
+
+// Create autocorrect button
+const autocorrectBtn = document.createElement('button');
+autocorrectBtn.type = 'button';
+autocorrectBtn.className = 'icon-btn autocorrect-btn';
+autocorrectBtn.title = 'Auto-correct spelling (AI-powered)';
+autocorrectBtn.innerHTML = '<i class="fas fa-spell-check"></i>';
+
+// Add button to icons container (first position)
+const iconsContainer = document.querySelector('.post-form-icons');
+if (iconsContainer) {
+    iconsContainer.insertBefore(autocorrectBtn, iconsContainer.firstChild);
+}
+
+// Spelling error indicator
+const errorIndicator = document.createElement('div');
+errorIndicator.className = 'spelling-indicator';
+errorIndicator.style.display = 'none';
+textarea.parentElement.appendChild(errorIndicator);
+
+        // Real-time spell checking (debounced)
+        textarea.addEventListener('input', function() {
+            clearTimeout(autocorrectTimeout);
+            
+            autocorrectTimeout = setTimeout(async () => {
+                const text = textarea.value.trim();
+                
+                if (text.length < 3) {
+                    errorIndicator.style.display = 'none';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/check-spelling/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ text: text })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.has_errors) {
+                        const errorCount = data.error_count || 0;
+                        errorIndicator.innerHTML = `
+                            <i class="fas fa-exclamation-circle"></i>
+                            ${errorCount} spelling ${errorCount === 1 ? 'error' : 'errors'} detected
+                            <button onclick="triggerAutocorrect()" style="margin-left:10px; padding:2px 8px; background:transparent; border:1px solid #f5a623; border-radius:4px; color:#f5a623; font-size:11px; cursor:pointer;">
+                                Auto-correct
+                            </button>
+                        `;
+                        errorIndicator.style.display = 'flex';
+                        errorIndicator.style.alignItems = 'center';
+                        errorIndicator.style.gap = '8px';
+                        errorIndicator.style.color = '#f5a623';
+                        errorIndicator.style.fontSize = '13px';
+                        errorIndicator.style.padding = '8px 12px';
+                        errorIndicator.style.background = 'rgba(245, 166, 35, 0.1)';
+                        errorIndicator.style.borderLeft = '3px solid #f5a623';
+                        errorIndicator.style.borderRadius = '6px';
+                        errorIndicator.style.marginTop = '8px';
+                    } else {
+                        errorIndicator.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Spell check error:', error);
+                    errorIndicator.style.display = 'none';
+                }
+            }, 1000); // Reduced to 1 second for better UX
+        });
+
+
+        // Helper function to trigger autocorrect
+        function triggerAutocorrect() {
+            autocorrectBtn.click();
+        }
+
+
+        // Autocorrect button click handler
+        autocorrectBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const text = textarea.value.trim();
+            
+            if (!text) {
+                showNotification('⚠️ Please enter some text first', 'warning');
+                return;
+            }
+            
+            // Show loading state
+            autocorrectBtn.disabled = true;
+            autocorrectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            errorIndicator.innerHTML = `
+                <i class="fas fa-cog fa-spin"></i>
+                Analyzing and correcting text...
+            `;
+            errorIndicator.style.display = 'flex';
+            errorIndicator.style.color = '#667eea';
+            errorIndicator.style.background = 'rgba(102, 126, 234, 0.1)';
+            errorIndicator.style.borderLeft = '3px solid #667eea';
+            
+            try {
+                const response = await fetch('/api/autocorrect/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ 
+                        text: text,
+                        advanced: true // Enable advanced correction
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const originalText = data.original_text;
+                    const correctedText = data.corrected_text;
+                    const errorCount = data.error_count || 0;
+                    
+                    if (data.changes_made && originalText !== correctedText) {
+                        // Text was corrected - apply it
+                        textarea.value = correctedText;
+                        
+                        // Show success message with corrections count
+                        errorIndicator.innerHTML = `
+                            <i class="fas fa-check-circle"></i>
+                            Text corrected! Fixed ${errorCount} ${errorCount === 1 ? 'error' : 'errors'}
+                        `;
+                        errorIndicator.style.color = '#4caf50';
+                        errorIndicator.style.background = 'rgba(76, 175, 80, 0.1)';
+                        errorIndicator.style.borderLeft = '3px solid #4caf50';
+                        errorIndicator.style.display = 'flex';
+                        
+                        // Show notification
+                        showNotification(`✅ ${data.message}`, 'success');
+                        
+                        // Hide after 3 seconds
+                        setTimeout(() => {
+                            errorIndicator.style.display = 'none';
+                        }, 3000);
+                        
+                    } else {
+                        // No errors found
+                        errorIndicator.innerHTML = `
+                            <i class="fas fa-check-circle"></i>
+                            No spelling errors found! Text looks good.
+                        `;
+                        errorIndicator.style.color = '#4caf50';
+                        errorIndicator.style.background = 'rgba(76, 175, 80, 0.1)';
+                        errorIndicator.style.borderLeft = '3px solid #4caf50';
+                        errorIndicator.style.display = 'flex';
+                        
+                        showNotification('✅ No spelling errors detected', 'success');
+                        
+                        setTimeout(() => {
+                            errorIndicator.style.display = 'none';
+                        }, 3000);
+                    }
+                    
+                    // Show detailed errors if any
+                    if (data.errors && Object.keys(data.errors).length > 0) {
+                        console.log('Spelling errors found:', data.errors);
+                    }
+                    
+                } else {
+                    // Error occurred
+                    showNotification('❌ ' + (data.message || data.error || 'Failed to autocorrect'), 'error');
+                    errorIndicator.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Autocorrect error:', error);
+                showNotification('❌ Network error. Please try again.', 'error');
+                errorIndicator.style.display = 'none';
+            } finally {
+                // Restore button state
+                autocorrectBtn.disabled = false;
+                autocorrectBtn.innerHTML = '<i class="fas fa-spell-check"></i>';
+            }
+        });
+
+        // Helper: Get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Helper: Show notification toast
+        function showNotification(message, type = 'info') {
+            // Remove existing notification
+            const existing = document.querySelector('.toast-notification');
+            if (existing) existing.remove();
+            
+            // Create notification
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.textContent = message;
+            
+            // Style
+            Object.assign(toast.style, {
+                position: 'fixed',
+                top: '20px',
+                right: '20px',
+                padding: '12px 20px',
+                borderRadius: '8px',
+                fontWeight: '600',
+                fontSize: '14px',
+                zIndex: '10000',
+                animation: 'slideInRight 0.3s ease',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                maxWidth: '300px'
+            });
+            
+            // Color based on type
+            if (type === 'success') {
+                toast.style.background = '#4caf50';
+                toast.style.color = 'white';
+            } else if (type === 'error') {
+                toast.style.background = '#f44336';
+                toast.style.color = 'white';
+            } else if (type === 'warning') {
+                toast.style.background = '#ff9800';
+                toast.style.color = 'white';
+            } else {
+                toast.style.background = '#2196F3';
+                toast.style.color = 'white';
+            }
+            
+            document.body.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+        `;
+        document.head.appendChild(style);
+
 
 // Emoji data
 const emojiData = {
