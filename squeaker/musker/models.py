@@ -17,7 +17,7 @@ class Meep(models.Model):
     image = models.ImageField(upload_to='meep_images/', null=True, blank=True)  # ← THIS LINE MUST BE HERE
     created_at = models.DateTimeField(auto_now_add=True)
     likes = models.ManyToManyField(User, related_name="meep_like", blank=True)
-    hashtags = models.ManyToManyField('Hashtag', related_name="meeps", blank=True)
+    # hashtags = models.ManyToManyField('Hashtag', related_name="meeps", blank=True)
     
     is_toxic = models.BooleanField(default=False)
     is_borderline = models.BooleanField(default=False)
@@ -47,19 +47,22 @@ class Meep(models.Model):
         if is_new:
             self.extract_hashtags()
     def extract_hashtags(self):
-        """Extract hashtags from meep body and create/link them"""
-        from .models import Hashtag
-        
+        """Extract hashtags from meep body and create MeepHashtag links"""
         hashtag_pattern = r'#(\w+)'
         hashtag_matches = re.findall(hashtag_pattern, self.body)
         
-        self.hashtags.clear()
+        # Clear existing hashtag links
+        MeepHashtag.objects.filter(meep=self).delete()
         
+        # Create new hashtag links
         for tag_name in hashtag_matches:
             tag_name = tag_name.lower()
             hashtag, created = Hashtag.objects.get_or_create(name=tag_name)
-            self.hashtags.add(hashtag)
+            MeepHashtag.objects.get_or_create(meep=self, hashtag=hashtag)
     
+    def get_hashtags(self):
+        """Get all hashtags for this meep"""
+        return Hashtag.objects.filter(meephashtag__meep=self)
     def check_toxicity(self):
         """
         Check content for toxicity using AI model
