@@ -1,7 +1,5 @@
 from django.utils import timezone
 from django.db.models import Count
-from datetime import timedelta, datetime
-from django.db.models import Count, Q
 from datetime import timedelta
 from django.core.cache import cache
 import logging
@@ -9,92 +7,60 @@ import logging
 logger = logging.getLogger(__name__)
 
 def get_trending_topics(days=1, limit=5, min_meeps=1):
-    """Get trending hashtags for today only"""
+    """Get trending hashtags using MeepHashtag bridge model"""
     try:
-        from .models import Hashtag, MeepHashtag
+        from .models import Hashtag, Meep, MeepHashtag
         
-        cache_key = f'trending_today_{limit}_{min_meeps}'
+        cache_key = f'trending_{days}days_{limit}_{min_meeps}'
+        
+        # Check cache first
         cached = cache.get(cache_key)
-        
         if cached is not None:
+            logger.info(f"📦 Returning cached trending topics: {len(cached)} items")
             return cached
         
-        # Get start of today (midnight)
-        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        # Calculate time threshold
+        if days == 1:
+            # For "today", use midnight
+            time_threshold = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            # For multiple days, use timedelta
+            time_threshold = timezone.now() - timedelta(days=days)
         
-        # Get trending hashtags from TODAY ONLY
+        logger.info(f"🔍 Searching for trending hashtags since: {time_threshold}")
+        
+        # Debug: Check how many meeps have hashtags in this period
+        recent_meeps_with_hashtags = Meep.objects.filter(
+            created_at__gte=time_threshold
+        ).filter(meephashtag__isnull=False).distinct().count()
+        logger.info(f"📝 Meeps with hashtags in period: {recent_meeps_with_hashtags}")
+        
+        # Get all hashtags used in the period
         trending = list(Hashtag.objects.filter(
-            meephashtag__meep__created_at__gte=today_start
+            meephashtag__meep__created_at__gte=time_threshold
         ).annotate(
             meep_count=Count('meephashtag', distinct=True)
         ).filter(
             meep_count__gte=min_meeps
         ).order_by('-meep_count')[:limit])
         
-        # Cache for 5 minutes only (so it updates frequently)
+        # Debug: If no trending, check all hashtags
+        if not trending:
+            logger.warning("⚠️ No trending hashtags found!")
+            
+            # Show ALL hashtags in the system (for debugging)
+            all_hashtags = Hashtag.objects.all().annotate(
+                meep_count=Count('meephashtag', distinct=True)
+            ).order_by('-meep_count')[:10]
+            
+            logger.info(f"🔍 Top 10 hashtags overall:")
+            for h in all_hashtags:
+                logger.info(f"   #{h.name} - {h.meep_count} total meeps")
+        
+        # Cache for 5 minutes
         cache.set(cache_key, trending, 300)
         
-        print(f"✅ Found {len(trending)} trending topics TODAY")
-        for t in trending:
-            print(f"   #{t.name} - {t.meep_count} meeps today")
-        
-        return trending
-        
-    except Exception as e:
-        print(f"❌ Error getting trending: {e}")
-        import traceback
-        traceback.print_exc()
-        return []
-def get_trending_topics(days=1, limit=5, min_meeps=1):
-    """Get trending hashtags with proper M2M relationship handling"""
-    try:
-        from .models import Hashtag, Meep
-        
-        cache_key = f'trending_today_{limit}_{min_meeps}'
-        
-        # Disable cache temporarily for debugging
-        # cached = cache.get(cache_key)
-        # if cached is not None:
-        #     return cached
-        
-        # Get start of today (midnight)
-        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        
-        logger.info(f"🔍 Searching for trending hashtags since: {today_start}")
-        
-        # METHOD 1: Query through the M2M relationship (hashtags field on Meep)
-        trending = list(Hashtag.objects.filter(
-            meeps__created_at__gte=today_start  # Use 'meeps' (related_name from Meep model)
-        ).annotate(
-            meep_count=Count('meeps', distinct=True)
-        ).filter(
-            meep_count__gte=min_meeps
-        ).order_by('-meep_count')[:limit])
-        
-        # Debug logging
-        logger.info(f"✅ Found {len(trending)} trending topics TODAY")
-        for t in trending:
-            logger.info(f"   #{t.name} - {t.meep_count} meeps today")
-        
-        # If no results, check if there are ANY meeps today
-        if not trending:
-            total_meeps_today = Meep.objects.filter(created_at__gte=today_start).count()
-            logger.warning(f"⚠️ No trending hashtags found. Total meeps today: {total_meeps_today}")
-            
-            # Check if there are any hashtags at all
-            all_hashtags = Hashtag.objects.all().count()
-            logger.warning(f"⚠️ Total hashtags in database: {all_hashtags}")
-            
-            # Check recent meeps with hashtags
-            recent_with_hashtags = Meep.objects.filter(
-                created_at__gte=today_start,
-                hashtags__isnull=False
-            ).distinct().count()
-            logger.warning(f"⚠️ Meeps with hashtags today: {recent_with_hashtags}")
-        
-        # Cache for 30 seconds
-        cache.set(cache_key, trending, 30)
-        
+        logger.info(f"✅ Returning {len(trending)} trending topics")
         return trending
         
     except Exception as e:
@@ -103,9 +69,8 @@ def get_trending_topics(days=1, limit=5, min_meeps=1):
         logger.error(traceback.format_exc())
         return []
 
-
 def get_suggested_profiles(user, limit=3):
-    """Get suggested profiles"""
+    """Get suggested profiles for authenticated users"""
     try:
         from .models import Profile
         
@@ -120,30 +85,14 @@ def get_suggested_profiles(user, limit=3):
             follower_count=Count('followed_by')
         ).order_by('-follower_count')[:limit])
         
-        return suggested
-        
-    except Exception as e:
-        print(f"❌ Error getting suggested profiles: {e}")
-        return []
-    """Get suggested profiles"""
-    try:
-        from .models import Profile
-        
-        if not user.is_authenticated:
-            return []
-        
-        suggested = list(Profile.objects.exclude(
-            user=user
-        ).exclude(
-            followed_by=user.profile
-        ).annotate(
-            follower_count=Count('followed_by')
-        ).order_by('-follower_count')[:limit])
+        logger.info(f"👥 Found {len(suggested)} suggested profiles for {user.username}")
         
         return suggested
         
     except Exception as e:
         logger.error(f"❌ Error getting suggested profiles: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return []
 
 
@@ -151,7 +100,6 @@ def sidebar_context(request):
     """Context processor for sidebar - Shows TODAY's trending only"""
     try:
         context = {
-            # Show only today's trending (24 hours)
             'trending_topics': get_trending_topics(days=1, limit=5, min_meeps=1),
             'suggested_profiles': []
         }
@@ -159,25 +107,7 @@ def sidebar_context(request):
         if request.user.is_authenticated:
             context['suggested_profiles'] = get_suggested_profiles(request.user, limit=3)
         
-        return context
-        
-    except Exception as e:
-        print(f"❌ Error in sidebar_context: {e}")
-        return {
-            'trending_topics': [],
-            'suggested_profiles': []
-        }
-    """Context processor for sidebar - Shows TODAY's trending only"""
-    try:
-        context = {
-            'trending_topics': get_trending_topics(days=1, limit=5, min_meeps=1),
-            'suggested_profiles': []
-        }
-        
-        if request.user.is_authenticated:
-            context['suggested_profiles'] = get_suggested_profiles(request.user, limit=3)
-        
-        logger.info(f"📊 Sidebar context: {len(context['trending_topics'])} trending, {len(context['suggested_profiles'])} suggested")
+        logger.info(f"📊 Sidebar: {len(context['trending_topics'])} trending, {len(context['suggested_profiles'])} suggested")
         
         return context
         

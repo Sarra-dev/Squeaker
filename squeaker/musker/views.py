@@ -267,11 +267,11 @@ def explore(request):
             ).select_related('user', 'user__profile').order_by('-created_at')[:50]
             
         elif search_type == 'hashtags':
-            # FIX: Use 'meeps' instead of 'meephashtag'
+            # FIX: Use 'meephashtag' instead of 'meeps'
             hashtags = Hashtag.objects.filter(
                 name__icontains=query
             ).annotate(
-                meep_count=Count('meeps', distinct=True)  # Changed from 'meephashtag'
+                meep_count=Count('meephashtag', distinct=True)  # FIXED: Changed from 'meeps' to 'meephashtag'
             ).order_by('-meep_count')[:20]
             
         elif search_type == 'people':
@@ -284,20 +284,18 @@ def explore(request):
     else:
         meeps = Meep.objects.all().select_related('user', 'user__profile').order_by('-created_at')[:50]
 
-    # FIX: Trending hashtags - Use 'meeps' relationship instead of 'meephashtag'
+    # FIX: Trending hashtags - Use 'meephashtag' relationship
     time_threshold = timezone.now() - timedelta(days=30)  # Last 30 days
     
     trending_hashtags = Hashtag.objects.filter(
-        meeps__created_at__gte=time_threshold  # Changed from 'meephashtag__meep__created_at'
+        meephashtag__meep__created_at__gte=time_threshold  # Use the bridge model relationship
     ).annotate(
-        meep_count=Count('meeps', distinct=True)  # Changed from 'meephashtag'
+        meep_count=Count('meephashtag', distinct=True)  # Count through bridge model
     ).filter(
         meep_count__gte=2  # At least 2 meeps to be considered trending
     ).order_by('-meep_count')[:10]
     
     # Debug logging
-    import logging
-    logger = logging.getLogger(__name__)
     logger.info(f"🔍 Explore trending: Found {trending_hashtags.count()} hashtags")
     for tag in trending_hashtags:
         logger.info(f"   #{tag.name} - {tag.meep_count} meeps")
