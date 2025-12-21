@@ -190,6 +190,112 @@
             animation: pulse 2s infinite;
         }
 
+        .community-note {
+    background: #f7f9f9;
+    border: 1px solid #cfd9de;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 12px;
+    font-size: 14px;
+    animation: slideIn 0.3s ease;
+}
+
+    .community-note-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+        color: #536471;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .community-note-header i {
+        font-size: 16px;
+    }
+
+    .community-note-content {
+        color: #0f1419;
+        line-height: 1.5;
+        margin-bottom: 8px;
+    }
+
+    .community-note-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid #eff3f4;
+        font-size: 12px;
+        color: #536471;
+    }
+
+    .community-note-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .badge-false {
+        background: rgba(244, 67, 54, 0.15);
+        color: #d32f2f;
+    }
+
+    .badge-unverifiable {
+        background: rgba(255, 152, 0, 0.15);
+        color: #e65100;
+    }
+
+    .badge-true {
+        background: rgba(76, 175, 80, 0.15);
+        color: #2e7d32;
+    }
+
+    .add-note-btn {
+        background: transparent;
+        border: 1px solid #cfd9de;
+        color: #536471;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 8px;
+    }
+
+    .add-note-btn:hover {
+        background: rgba(29, 155, 240, 0.1);
+        border-color: #1d9bf0;
+        color: #1d9bf0;
+    }
+
+    .add-note-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .add-note-btn i {
+        margin-right: 4px;
+    }
+
+    .note-loading {
+        color: #536471;
+        font-size: 13px;
+        font-style: italic;
+        padding: 8px 0;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
         @keyframes pulse {
             0%, 100% {
                 opacity: 1;
@@ -283,9 +389,10 @@
                                     <button class="emoji-category" onclick="showEmojiCategory('flags')">🏳️</button>
                                 </div>
                                 <div class="emoji-grid" id="emoji-grid"></div>
+                                
                             </div>
                         </div>
-
+                        
                         <button type="submit" class="btn-post">Post</button>
                     </div>
                 </form>
@@ -365,6 +472,48 @@
                         {% if meep.image %}
                             <img src="{{ meep.image.url }}"
                                  style="max-width:100%; border-radius:12px; margin-top:10px;">
+                        {% endif %}
+
+                        <!-- ==================== COMMUNITY NOTES ==================== -->
+                        {% if meep.community_notes.all %}
+                            {% for note in meep.community_notes.all %}
+                                {% if note.is_active %}
+                                <div class="community-note">
+                                    <div class="community-note-header">
+                                        <i class="fas {{ note.get_icon }}"></i>
+                                        <span>Readers added context they thought people might want to know</span>
+                                    </div>
+                                    <div class="community-note-content">
+                                        {{ note.explanation }}
+                                    </div>
+                                    <div class="community-note-footer">
+                                        <div>
+                                            <span class="community-note-badge badge-{{ note.get_css_class }}">
+                                                {{ note.get_verdict_display }}
+                                            </span>
+                                            <span style="margin-left: 8px;">{{ note.created_at|date:"M d, Y" }}</span>
+                                        </div>
+                                        {% if user.is_staff %}
+                                        <button onclick="removeNote({{ note.id }})" 
+                                                style="background:none; border:none; color:#536471; cursor:pointer; font-size:12px;"
+                                                title="Remove note">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <!-- Button to add community note -->
+                            <button class="add-note-btn" 
+                                    onclick="addCommunityNote({{ meep.id }})" 
+                                    id="note-btn-{{ meep.id }}">
+                                <i class="fas fa-plus"></i> Add context
+                            </button>
+                            <div id="note-loading-{{ meep.id }}" class="note-loading" style="display:none;">
+                                <i class="fas fa-spinner fa-spin"></i> Analyzing post...
+                            </div>
                         {% endif %}
 
                         <!-- ACTION BUTTONS -->
@@ -850,6 +999,196 @@ function removePreviewImage() {
         imageInput.value = '';
     }
 }
+
+// 👇 ADD THESE 3 FUNCTIONS AT THE END OF YOUR <script> TAG (after removePreviewImage function) 👇
+
+// Function 1: Check facts when button is clicked
+async function checkFacts() {
+    const textarea = document.getElementById('post-textarea');
+    const content = textarea.value.trim();
+    const button = document.getElementById('factCheckBtn');
+    const container = document.getElementById('fact-check-container');
+    
+    if (!content) {
+        showNotification('⚠️ Please write something before fact-checking!', 'warning');
+        return;
+    }
+    
+    // Show loading spinner
+    button.disabled = true;
+    container.innerHTML = `
+        <div class="fact-check-loading">
+            <i class="fas fa-spinner"></i>
+            <span>Analyzing post for factual accuracy...</span>
+        </div>
+    `;
+    
+    try {
+        const csrftoken = getCookie('csrftoken');
+        
+        // Call our backend API
+        const response = await fetch('/api/fact-check/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ content: content })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Fact-check failed');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayFactCheckResult(data.result);
+        } else {
+            throw new Error(data.error || 'Unknown error');
+        }
+        
+    } catch (error) {
+        console.error('Fact check error:', error);
+        container.innerHTML = `
+            <div class="fact-check-result false">
+                <div class="fact-check-header">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Error</span>
+                </div>
+                <div class="fact-check-explanation">
+                    Unable to fact-check at this time. Please try again.
+                </div>
+            </div>
+        `;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+// Function 2: Display the results in a nice colored box
+function displayFactCheckResult(result) {
+    const container = document.getElementById('fact-check-container');
+    const verdict = result.verdict.toLowerCase();
+    
+    const icons = {
+        'true': 'fa-check-circle',
+        'false': 'fa-times-circle',
+        'unverifiable': 'fa-question-circle',
+        'opinion': 'fa-comment-dots'
+    };
+    
+    const titles = {
+        'true': 'Factually Accurate',
+        'false': 'Contains Misinformation',
+        'unverifiable': 'Cannot Verify',
+        'opinion': 'Opinion/Subjective'
+    };
+    
+    const confidenceClass = `confidence-${result.confidence.toLowerCase()}`;
+    
+    container.innerHTML = `
+        <div class="fact-check-result ${verdict}">
+            <div class="fact-check-header">
+                <i class="fas ${icons[verdict]}"></i>
+                <span>${titles[verdict]}</span>
+                <span class="fact-check-confidence ${confidenceClass}">${result.confidence}</span>
+            </div>
+            <div class="fact-check-explanation">${result.explanation}</div>
+            ${result.reasoning ? `<div class="fact-check-reasoning">${result.reasoning}</div>` : ''}
+        </div>
+    `;
+}
+
+// ==================== COMMUNITY NOTES FUNCTIONS ====================
+
+// Add community note to a post
+async function addCommunityNote(meepId) {
+    const button = document.getElementById(`note-btn-${meepId}`);
+    const loading = document.getElementById(`note-loading-${meepId}`);
+    
+    if (!button) return;
+    
+    // Show loading
+    button.style.display = 'none';
+    loading.style.display = 'block';
+    
+    try {
+        const csrftoken = getCookie('csrftoken');
+        
+        const response = await fetch(`/api/community-note/${meepId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.no_note_needed) {
+                // No note needed
+                loading.innerHTML = '<i class="fas fa-check-circle"></i> No context needed - post appears accurate';
+                loading.style.color = '#4caf50';
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                    button.style.display = 'inline-block';
+                }, 3000);
+            } else {
+                // Note added - reload page to show it
+                loading.innerHTML = '<i class="fas fa-check-circle"></i> Context added! Reloading...';
+                loading.style.color = '#1d9bf0';
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+        } else {
+            throw new Error(data.error || 'Failed to add note');
+        }
+        
+    } catch (error) {
+        console.error('Community note error:', error);
+        loading.innerHTML = '<i class="fas fa-exclamation-circle"></i> Failed to add context';
+        loading.style.color = '#f44336';
+        setTimeout(() => {
+            loading.style.display = 'none';
+            button.style.display = 'inline-block';
+        }, 3000);
+    }
+}
+
+// Remove community note (staff only)
+async function removeNote(noteId) {
+    if (!confirm('Remove this community note?')) return;
+    
+    try {
+        const csrftoken = getCookie('csrftoken');
+        
+        const response = await fetch(`/api/community-note/${noteId}/remove/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('✅ Community note removed', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('❌ Failed to remove note', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Remove note error:', error);
+        showNotification('❌ Error removing note', 'error');
+    }
+}
+
+// Note: getCookie function already exists in your file, so no need to add it again!
 </script>
 </body>
 </html>

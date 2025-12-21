@@ -13,7 +13,7 @@ import json
 import requests
 import logging
 
-from .models import Profile, Meep, Comment, Notification,Hashtag, Share, Message, Conversation
+from .models import Profile, Meep, Comment, Notification, Hashtag, Share, Message, Conversation, CommunityNote
 from .forms import MeepForm, ProfileEditForm, SignUpForm
 from .utils import create_notification
 
@@ -169,6 +169,7 @@ def register_user(request):
 
 def logout_user(request):
     """Logout"""
+    CommunityNote.objects.all().delete()
     logout(request)
     messages.success(request, 'You have been logged out')
     return redirect('login')
@@ -640,3 +641,157 @@ def test_autocorrect(request):
         'errors': errors,
         'success': True
     })
+
+@csrf_exempt
+@login_required
+def add_community_note(request, meep_id):
+    """Add AI-generated community note to a post"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        meep = get_object_or_404(Meep, id=meep_id)
+        
+        # Check if note already exists
+        existing_note = CommunityNote.objects.filter(meep=meep, is_active=True).first()
+        if existing_note:
+            return JsonResponse({
+                'success': True,
+                'note': {
+                    'verdict': existing_note.verdict,
+                    'confidence': existing_note.confidence,
+                    'explanation': existing_note.explanation,
+                    'reasoning': existing_note.reasoning,
+                    'created_at': existing_note.created_at.strftime('%b %d, %Y')
+                }
+            })
+        
+        # Get API key
+        api_key = getattr(settings, 'GROQ_API_KEY', '')
+        if not api_key:
+            return JsonResponse({'error': 'API not configured'}, status=500)
+        
+        # Create fact-checking prompt
+        system_prompt = """You are a fact-checker for a social media platform. Analyze the post and provide context.
+
+Respond ONLY with a JSON object:
+{
+    "verdict": "TRUE" or "FALSE" or "UNVERIFIABLE" or "OPINION",
+    "confidence": "HIGH" or "MEDIUM" or "LOW",
+    "explanation": "Clear, neutral explanation (max 100 words)",
+    "reasoning": "Why you reached this verdict"
+}
+
+Rules:
+- TRUE: Factually accurate
+- FALSE: Contains misinformation
+- UNVERIFIABLE: Needs more context
+- OPINION: Personal opinion, no factual claims
+- Be neutral and objective
+- Focus on facts, not opinions"""
+
+        print(f"🔍 Analyzing post {meep_id}: {meep.body[:50]}...")
+
+        # Call Groq API
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            },
+            json={
+                'model': 'llama-3.3-70b-versatile',
+                'messages': [
+                    {'role': 'system', 'content': system_prompt},
+                    {'role': 'user', 'content': f'Analyze this post:\n\n"{meep.body}"'}
+                ],
+                'max_tokens': 500,
+                'temperature': 0.3
+            },
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            print(f"❌ Groq API error: {response.status_code}")
+            return JsonResponse({'error': 'Fact-check failed'}, status=500)
+        
+        # Parse response
+        groq_response = response.json()
+        ai_response = groq_response['choices'][0]['message']['content']
+        
+        print(f"📝 AI Response: {ai_response[:100]}...")
+        
+        # Extract JSON
+        try:
+            if '```json' in ai_response:
+                ai_response = ai_response.split('```json')[1].split('```')[0].strip()
+            elif '```' in ai_response:
+                ai_response = ai_response.split('```')[1].split('```')[0].strip()
+            
+            result = json.loads(ai_response)
+            
+            print(f"✅ Verdict: {result['verdict']}, Confidence: {result['confidence']}")
+            
+            # Only create note if it's significant (not just opinion or true)
+            if result['verdict'] in ['FALSE', 'UNVERIFIABLE']:
+                # Create community note
+                note = CommunityNote.objects.create(
+                    meep=meep,
+                    verdict=result['verdict'],
+                    confidence=result['confidence'],
+                    explanation=result['explanation'],
+                    reasoning=result.get('reasoning', ''),
+                    added_by=request.user,
+                    is_ai_generated=True,
+                    is_approved=True  # Auto-approve for now
+                )
+                
+                print(f"📌 Community note #{note.id} created for meep #{meep.id}")
+                
+                return JsonResponse({
+                    'success': True,
+                    'note': {
+                        'verdict': note.verdict,
+                        'confidence': note.confidence,
+                        'explanation': note.explanation,
+                        'reasoning': note.reasoning,
+                        'created_at': note.created_at.strftime('%b %d, %Y')
+                    }
+                })
+            else:
+                # No significant issues found
+                print(f"✓ No note needed - post is {result['verdict']}")
+                return JsonResponse({
+                    'success': True,
+                    'no_note_needed': True,
+                    'message': 'No fact-check needed - post appears accurate'
+                })
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parse error: {str(e)}")
+            return JsonResponse({'error': 'Failed to parse response'}, status=500)
+        
+    except Exception as e:
+        print(f"❌ Community note error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def remove_community_note(request, note_id):
+    """Remove/hide a community note (staff only)"""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        note = get_object_or_404(CommunityNote, id=note_id)
+        note.is_active = False
+        note.save()
+        
+        print(f"🗑️ Community note #{note_id} removed by {request.user.username}")
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        print(f"❌ Remove note error: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)

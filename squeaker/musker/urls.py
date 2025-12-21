@@ -51,5 +51,7 @@ urlpatterns = [
     path('api/autocorrect/', views.autocorrect_api, name='autocorrect_api'),
     path('api/check-spelling/', views.check_spelling_api, name='check_spelling_api'),
    
- 
+    # Community Notes
+    path('api/community-note/<int:meep_id>/', views.add_community_note, name='add_community_note'),
+    path('api/community-note/<int:note_id>/remove/', views.remove_community_note, name='remove_community_note'),
 ]

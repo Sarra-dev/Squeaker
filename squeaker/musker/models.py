@@ -299,3 +299,58 @@ class Notification(models.Model):
         if self.notification_type == "follow":
             return reverse("profile", args=[self.sender.id])
         return reverse("notifications")
+
+class CommunityNote(models.Model):
+    """Community Notes for fact-checking posts (like X/Twitter)"""
+    
+    VERDICT_CHOICES = [
+        ('TRUE', 'Accurate'),
+        ('FALSE', 'Misleading'),
+        ('UNVERIFIABLE', 'Needs Context'),
+        ('OPINION', 'Opinion'),
+    ]
+    
+    CONFIDENCE_CHOICES = [
+        ('HIGH', 'High'),
+        ('MEDIUM', 'Medium'),
+        ('LOW', 'Low'),
+    ]
+    
+    meep = models.ForeignKey('Meep', on_delete=models.CASCADE, related_name='community_notes')
+    verdict = models.CharField(max_length=20, choices=VERDICT_CHOICES)
+    confidence = models.CharField(max_length=10, choices=CONFIDENCE_CHOICES)
+    explanation = models.TextField()
+    reasoning = models.TextField(blank=True)
+    
+    # Who added this note
+    added_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    
+    # AI or Human generated
+    is_ai_generated = models.BooleanField(default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Visibility
+    is_active = models.BooleanField(default=True)
+    is_approved = models.BooleanField(default=False)  # For moderation
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Note for Meep {self.meep.id}: {self.verdict}"
+    
+    def get_icon(self):
+        icons = {
+            'TRUE': 'fa-check-circle',
+            'FALSE': 'fa-times-circle',
+            'UNVERIFIABLE': 'fa-question-circle',
+            'OPINION': 'fa-comment-dots'
+        }
+        return icons.get(self.verdict, 'fa-info-circle')
+    
+    def get_css_class(self):
+        return self.verdict.lower()
+
